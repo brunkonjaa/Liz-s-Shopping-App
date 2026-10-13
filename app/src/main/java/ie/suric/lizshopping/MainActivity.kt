@@ -116,7 +116,8 @@ fun ShoppingApp(vm: ShoppingViewModel = viewModel()) {
                         else -> vm.add(shop, item)
                     }
                     if (edit.mode != "custom" && edit.mode != "favourite") {
-                        if (heart) vm.favourite(shop, item) else if (data.favourites.any { it.key() == edit.item.key() }) vm.removeFavourite(shop, edit.item)
+                        val wasFavourite = data.favourites.any { it.key() == edit.item.key() }
+                        if (heart && !wasFavourite) vm.favourite(shop, item) else if (!heart && wasFavourite) vm.removeFavourite(shop, edit.item)
                     }
                     editing = null
                 } }
@@ -257,7 +258,7 @@ private fun ProductEditor(modifier: Modifier, edit: Editing, initialHeart: Boole
         Quantity(qty, { qty = (qty - 1).coerceAtLeast(1) }, { qty = (qty + 1).coerceAtMost(999) }, name)
         Text(if(size.startsWith("Loose")) "For loose items, enter an amount such as 500 g above. Quantity multiplies that amount." else "Size describes one package. Quantity is how many packages to buy.", style = MaterialTheme.typography.bodySmall)
         if (edit.mode != "favourite") Row(Modifier.fillMaxWidth().clickable { heart = !heart }.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(heart, { heart = it }); Text("♥  Save as a favourite for this shop")
+            Checkbox(heart, { heart = it }); Text(if (initialHeart) "♥  Favourite saved (usual quantity kept)" else "♥  Save as a favourite for this shop")
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Button(onClick = {
