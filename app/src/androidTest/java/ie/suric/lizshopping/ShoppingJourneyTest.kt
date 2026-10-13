@@ -14,7 +14,7 @@ class ShoppingJourneyTest {
         rule.waitUntil(10000) { rule.onAllNodesWithText("Lidl").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("Lidl").performClick()
         rule.onNodeWithText("Search for a product").performTextInput("Milk")
-        rule.onNodeWithText("Milk", useUnmergedTree = true).performClick()
+        rule.onNode(hasText("Milk") and hasText("Dairy and eggs")).performClick()
         rule.onNodeWithText("2 L").performClick()
         rule.onNodeWithContentDescription("Increase Milk quantity").performClick()
         rule.onNodeWithText("+ Add to shopping list").performScrollTo().performClick()
