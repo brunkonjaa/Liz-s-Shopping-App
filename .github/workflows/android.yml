@@ -27,6 +27,8 @@ jobs:
         with:
           gradle-version: '9.1.0'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - name: Install Android SDK packages
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Generate Gradle wrapper
@@ -67,6 +69,8 @@ jobs:
           sudo usermod -aG kvm "$USER"
           sudo chmod 666 /dev/kvm
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - name: Install Android SDK packages
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Generate Gradle wrapper
