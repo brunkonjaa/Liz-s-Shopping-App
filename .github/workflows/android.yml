@@ -82,11 +82,19 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          script: ./gradlew --no-daemon connectedDebugAndroidTest
+          script: |
+            ./gradlew --no-daemon connectedDebugAndroidTest
+            mkdir -p app/build/qa-screenshots
+            adb exec-out run-as ie.suric.lizshopping cat files/shops.png > app/build/qa-screenshots/shops.png
+            adb exec-out run-as ie.suric.lizshopping cat files/milk-editor.png > app/build/qa-screenshots/milk-editor.png
+            adb exec-out run-as ie.suric.lizshopping cat files/shopping-list.png > app/build/qa-screenshots/shopping-list.png
       - name: Upload emulator reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: android13-journey-reports
-          path: app/build/reports/androidTests/
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+            app/build/qa-screenshots/
           if-no-files-found: ignore

@@ -6,17 +6,32 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import androidx.test.platform.app.InstrumentationRegistry
+import android.graphics.Bitmap
+import java.io.File
+import java.io.FileOutputStream
 
 @RunWith(AndroidJUnit4::class)
 class ShoppingJourneyTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
+    private fun screenshot(name: String) {
+        rule.waitForIdle()
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val bitmap = checkNotNull(instrumentation.uiAutomation.takeScreenshot())
+        FileOutputStream(File(instrumentation.targetContext.filesDir, "$name.png")).use { output ->
+            check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
+        }
+        bitmap.recycle()
+    }
     @Test fun selectShopAddTwoMilkAndTickOff() {
         rule.waitUntil(10000) { rule.onAllNodesWithText("Lidl").fetchSemanticsNodes().isNotEmpty() }
+        screenshot("shops")
         rule.onNodeWithText("Lidl").performClick()
         rule.onNodeWithText("Search for a product").performTextInput("Milk")
         rule.onNode(hasText("Milk") and hasText("Dairy and eggs")).performClick()
         rule.onNodeWithText("2 L").performClick()
         rule.onNodeWithContentDescription("Increase Milk quantity").performClick()
+        screenshot("milk-editor")
         rule.onNodeWithText("+ Add to shopping list").performScrollTo().performClick()
         rule.onNodeWithText("Shopping List").performClick()
         rule.onNodeWithText("×2").assertExists()
@@ -34,6 +49,7 @@ class ShoppingJourneyTest {
         rule.onNodeWithText("Shopping List").performClick()
         rule.onNodeWithText("Free Range · 12 pack").assertExists()
         rule.onNodeWithText("×1").assertExists()
+        screenshot("shopping-list")
         rule.onNodeWithContentDescription("Increase Eggs quantity").performScrollTo().performClick()
         rule.onNodeWithText("Favourites").performClick()
         rule.onNodeWithText("Free Range · 12 pack · ×1").assertExists()
