@@ -86,6 +86,8 @@ jobs:
           api-level: 33
           arch: x86_64
           profile: pixel_2
+          disk-size: 1G
+          emulator-boot-timeout: 180
           disable-animations: true
           script: |
             ./gradlew --no-daemon connectedDebugAndroidTest
