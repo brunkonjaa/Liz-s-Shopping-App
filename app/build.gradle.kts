@@ -1,7 +1,7 @@
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.plugin.compose") }
 android {
     namespace = "ie.suric.lizshopping"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId = "ie.suric.lizshopping"
         minSdk = 26

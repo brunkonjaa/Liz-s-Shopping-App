@@ -5,11 +5,11 @@ Native Kotlin / Jetpack Compose grocery-list app for Lidl, Aldi, Dunnes Stores a
 Source implementation 0.1.0. Build, unit tests, lint and emulator validation are pending. Do not describe this version as a finished or validated application yet. See TESTING.md.
 
 ## Build
-Use JDK 17, Android SDK 36 and Gradle 9.1.0. Install SDK platform 36 and build-tools 36.0.0. Open this folder in Android Studio, set the SDK path in `local.properties`, and sync.
+Use JDK 17, Android SDK 37 and Gradle 9.4.1. Install SDK platform 37 and build-tools 36.0.0. Open this folder in Android Studio, set the SDK path in `local.properties`, and sync.
 
-The wrapper is not yet generated. With Gradle 9.1.0 available:
+The wrapper is not yet generated. With Gradle 9.4.1 available:
 ```
-gradle wrapper --gradle-version 9.1.0
+gradle wrapper --gradle-version 9.4.1
 ./gradlew testDebugUnitTest lintDebug assembleDebug
 ```
 APK output: `app/build/outputs/apk/debug/app-debug.apk`.
