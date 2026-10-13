@@ -35,6 +35,11 @@ jobs:
         run: gradle wrapper --gradle-version 9.4.1
       - name: Run unit tests, lint and build debug APK
         run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
+      - name: Verify packaged permissions and exported components
+        run: |
+          mkdir -p app/build/reports/security
+          apkanalyzer manifest print app/build/outputs/apk/debug/app-debug.apk > app/build/reports/security/apk-manifest.xml
+          python3 scripts/check_manifest.py app/build/reports/security/apk-manifest.xml
       - name: Upload test and lint reports
         if: always()
         uses: actions/upload-artifact@v4
