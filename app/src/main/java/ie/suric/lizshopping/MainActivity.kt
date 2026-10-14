@@ -73,7 +73,7 @@ fun ShoppingApp(vm: ShoppingViewModel = viewModel()) {
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let(vm::export) }
     val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::readBackup) }
     LaunchedEffect(message) { message?.let { snack.showSnackbar(it); vm.message.value = null } }
-    val shop = state?.selected
+    val shop = state?.selectedShop?.takeUnless { it.archived }?.name
     BackHandler(!choosing || editing != null) { if (editing != null) editing = null else { choosing = true; query = ""; category = null } }
     Scaffold(
         containerColor = Background,
@@ -108,7 +108,7 @@ fun ShoppingApp(vm: ShoppingViewModel = viewModel()) {
                     val tint = when(name) { "Lidl" -> Color(0xFFE6F0FA); "Aldi" -> Color(0xFFEBEDF9); "Dunnes Stores" -> Color(0xFFE7F1E9); else -> Color(0xFFF8EAEA) }
                     Card(onClick = { vm.select(name); choosing = false; tab = 0; query = ""; category = null }, colors = CardDefaults.cardColors(containerColor = tint), shape = RoundedCornerShape(22.dp)) {
                         Row(Modifier.fillMaxWidth().padding(22.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) { Text(name, fontSize = 24.sp, fontWeight = FontWeight.Bold); Text("${s.stores.getValue(name).items.count { !it.done }} items to buy" + if (s.selected == name) " · Last used" else "", fontSize = 14.sp) }
+                            Column(Modifier.weight(1f)) { Text(name, fontSize = 24.sp, fontWeight = FontWeight.Bold); Text("${s.shopData(name).items.count { !it.done }} items to buy" + if (s.selectedShopId == ShopIds.builtIn(name)) " · Last used" else "", fontSize = 14.sp) }
                             Text("›", fontSize = 30.sp)
                         }
                     }
@@ -116,7 +116,7 @@ fun ShoppingApp(vm: ShoppingViewModel = viewModel()) {
                 item { Text("Simple lists. Happier shopping.", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp)) }
             }
         } else {
-            val data = s.stores.getValue(shop)
+            val data = s.shopData(shop)
             val edit = editing
             if (edit != null) {
                 key(edit) { ProductEditor(Modifier.padding(padding), edit, data.favourites.any { it.key() == edit.item.key() }, onCancel = { editing = null }) { item, heart ->
@@ -141,11 +141,12 @@ fun ShoppingApp(vm: ShoppingViewModel = viewModel()) {
                                 item { Button(onClick = { editing = Editing(Item(name = ""), null, "custom") }, modifier = Modifier.fillMaxWidth()) { Text("+ Add custom item") } }
                                 item {
                                     Text("Categories", fontWeight = FontWeight.Bold)
-                                    CategoryPicker(category) { category = it }
+                                    CategoryPicker(category, s.allCategories.map { it.name }) { category = it }
                                 }
-                                val products = (Catalogue.products + s.custom).distinctBy { it.name.lowercase(java.util.Locale.ROOT) }.filter { (category == null || it.category == category) && it.name.contains(query, true) }
-                                items(products, key = { it.name.lowercase(java.util.Locale.ROOT) }) { p ->
-                                    ProductCard(p.symbol, p.name, p.category, { editing = Editing(Item(name = p.name, variety = p.varieties.first(), size = p.sizes.first()), p, "add") })
+                                val products = (if (query.isBlank()) s.allProducts else ProductSearch.suggest(s.allProducts, query))
+                                    .filter { category == null || it.category == category }
+                                items(products, key = { it.id }) { p ->
+                                    ProductCard(p.symbol, p.name, p.category, { editing = Editing(Item(name = p.name, variety = p.varieties.firstOrNull().orEmpty(), size = p.sizes.firstOrNull().orEmpty(), productId = p.id), p, "add") })
                                 }
                                 if (products.isEmpty()) item { Text("No matches. Add a custom item above.") }
                             }
@@ -161,7 +162,7 @@ fun ShoppingApp(vm: ShoppingViewModel = viewModel()) {
                                             Text("${Catalogue.symbol(i.name)}  ${i.name}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                                             Text("${i.detail()} · ×${i.quantity}")
                                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                TextButton(onClick = { editing = Editing(i, Catalogue.find(i.name), "favourite") }) { Text("Edit") }
+                                                TextButton(onClick = { editing = Editing(i, s.allProducts.firstOrNull { p -> p.id == i.productId }, "favourite") }) { Text("Edit") }
                                                 TextButton(onClick = { vm.removeFavourite(shop, i) }) { Text("♥", fontSize = 24.sp, modifier = Modifier.semantics { contentDescription = "Remove ${i.name} from $shop favourites" }) }
                                                 Button(onClick = { vm.add(shop, i.copy(id = UUID.randomUUID().toString())) }) { Text("+ Add") }
                                             }
@@ -184,7 +185,7 @@ fun ShoppingApp(vm: ShoppingViewModel = viewModel()) {
                                             }
                                             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                                 Quantity(i.quantity, { vm.quantity(shop, i.id, -1) }, { vm.quantity(shop, i.id, 1) }, i.name)
-                                                TextButton(onClick = { editing = Editing(i, Catalogue.find(i.name), "list") }) { Text("Edit") }
+                                                TextButton(onClick = { editing = Editing(i, s.allProducts.firstOrNull { p -> p.id == i.productId }, "list") }) { Text("Edit") }
                                                 TextButton(onClick = { vm.remove(shop, i.id) }) { Text("Remove") }
                                             }
                                         }
@@ -203,7 +204,7 @@ fun ShoppingApp(vm: ShoppingViewModel = viewModel()) {
             if (shop != null && !choosing) {
                 TextButton(onClick = { more = false; confirm = "Clear completed items" }) { Text("Clear completed items") }
                 TextButton(onClick = { more = false; confirm = "Start a fresh list" }) { Text("Start a fresh list") }
-                TextButton(onClick = { more = false; vm.reuse(shop) }, enabled = state?.stores?.get(shop)?.previous?.isNotEmpty() == true) { Text("Reuse previous items") }
+                TextButton(onClick = { more = false; vm.reuse(shop) }, enabled = state?.shopData(shop)?.previous?.isNotEmpty() == true) { Text("Reuse previous items") }
             }
             TextButton(onClick = { more = false; export.launch("Liz-Shopping-Backup.json") }, enabled = state != null) { Text("Save backup") }
             TextButton(onClick = { more = false; import.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }) { Text("Restore backup") }
@@ -211,14 +212,14 @@ fun ShoppingApp(vm: ShoppingViewModel = viewModel()) {
         }
     }, confirmButton = { TextButton(onClick = { more = false }) { Text("Close") } })
     if (confirm != null && shop != null) AlertDialog(onDismissRequest = { confirm = null }, title = { Text(confirm!!) }, text = { Text("This changes only your $shop shopping list. Favourites are kept. Removed items can be reused from Shopping options.") }, confirmButton = { TextButton(onClick = { if (confirm == "Clear completed items") vm.clearCompleted(shop) else vm.fresh(shop); confirm = null }) { Text("Confirm") } }, dismissButton = { TextButton(onClick = { confirm = null }) { Text("Cancel") } })
-    if (restoreReady) AlertDialog(onDismissRequest = vm::cancelRestore, title = { Text("Restore this backup?") }, text = { Text("This replaces all four shopping lists, favourites and custom products. Save a backup first if you want to keep your current data.") }, confirmButton = { TextButton(onClick = { vm.restore(); choosing = true; editing = null }) { Text("Replace data") } }, dismissButton = { TextButton(onClick = vm::cancelRestore) { Text("Cancel") } })
+    if (restoreReady) AlertDialog(onDismissRequest = vm::cancelRestore, title = { Text("Restore this backup?") }, text = { Text("This replaces saved shops, catalogue products, favourites and shopping lists. Phone-selected image files are not included and use category fallbacks. Save a backup first if you want to keep your current data.") }, confirmButton = { TextButton(onClick = { vm.restore(); choosing = true; editing = null }) { Text("Replace data") } }, dismissButton = { TextButton(onClick = vm::cancelRestore) { Text("Cancel") } })
 }
 
 @Composable
-private fun CategoryPicker(selected: String?, onSelect: (String?) -> Unit) {
+private fun CategoryPicker(selected: String?, categories: List<String>, onSelect: (String?) -> Unit) {
     androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         item { FilterChip(selected == null, onClick = { onSelect(null) }, label = { Text("All") }, modifier = Modifier.heightIn(min = 48.dp)) }
-        items(Catalogue.categories) { c -> FilterChip(selected == c, onClick = { onSelect(if (selected == c) null else c) }, label = { Text(c) }, modifier = Modifier.heightIn(min = 48.dp)) }
+        items(categories) { c -> FilterChip(selected == c, onClick = { onSelect(if (selected == c) null else c) }, label = { Text(c) }, modifier = Modifier.heightIn(min = 48.dp)) }
     }
 }
 
@@ -262,7 +263,7 @@ private fun ProductEditor(modifier: Modifier, edit: Editing, initialHeart: Boole
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     Column(modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(edit.product?.symbol ?: "🛍", fontSize = 64.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
-        if (edit.mode == "custom" || Catalogue.find(edit.item.name) == null) OutlinedTextField(name, { name = it.take(100) }, label = { Text("Product name (required)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        if (edit.mode == "custom") OutlinedTextField(name, { name = it.take(100) }, label = { Text("Product name (required)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         Options("Variety", edit.product?.varieties ?: emptyList(), variety) { variety = it }
         Options("Package size / unit", edit.product?.sizes ?: emptyList(), size) { size = it }
         Text("Number of packages", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)

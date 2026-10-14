@@ -7,9 +7,16 @@ The editor now hides previous confirmation snackbars and clears keyboard focus o
 Delivered APK SHA-256: `2c1d2c32a109c057d00f19c459398811c65ad0ca2aaeae8d81af41731a64d616`.
 
 ## Automated tests provided
-RulesTest: 17 tests covering pack-count separation, normalized duplicate merge, variety/size differences, quantity bounds, edit collision, favourite independence, fresh/reuse, completion reopening, favourite replacement, key catalogue presets, custom weights and invalid text/quantity.
-StorageTest: 9 Robolectric Android 13 tests covering backup round-trip, shop independence, SQLite reopen, unknown version/shop, size limit, fractional quantity, failed restore data preservation and plain-text custom input.
+RulesTest: 21 unit tests covering stable identities, product reuse, shop-scoped merge behaviour, search suggestions, configurable shops/categories, independent favourites, quantity/configuration rules, and validation.
+StorageTest: 15 Robolectric Android 13 tests covering v1 migration, SQLite schema upgrade and failure rollback, v1 backup import, v2 round-trip, custom shop/product/category persistence, image references/fallback, malformed data and preservation after rejection.
 ShoppingJourneyTest: Compose Android test for shop selection, search, two cartons of milk, completion and undo, eggs, favourite quantity independence, shop isolation and custom items. Run on a clean test installation; it changes app data.
+
+## Task 2 coverage added
+The updated `RulesTest` covers stable product/shop/category IDs, shop-scoped duplicate merging, cross-shop separation, tomato singular/plural search suggestions, custom shop validation/archive, custom category/product references and unchanged catalogue definitions.
+
+The updated `StorageTest` uses a concrete v1 JSON fixture and covers deterministic migration of entry IDs, configurations, quantities, completion, favourites, previous items, custom products and selected shop; SQLite schema 1 → 2; rollback after a simulated malformed v1 row; v1 backup import; v2 round-trip; custom shop/category/product restart persistence; local image key persistence in the private snapshot; portable image fallback; and malformed/oversized/unknown-reference rejection without replacement.
+
+`ProductImageStore` validates JPEG, PNG and WebP signatures, file size and image bounds before copying to app-private storage. This task adds the storage service but not the visual image picker or rendered image cards. Picker/device image flows remain unverified until the later UI tasks and emulator/device checks.
 
 ## Required validation commands
 `./gradlew testDebugUnitTest lintDebug assembleDebug`

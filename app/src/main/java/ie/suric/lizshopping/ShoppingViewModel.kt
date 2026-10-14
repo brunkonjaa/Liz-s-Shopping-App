@@ -33,29 +33,96 @@ class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: Exception) { message.value = e.message ?: "Change could not be saved." }
         } }
     }
-    fun select(shop: String) { require(shop in shops); update { it.copy(selected = shop) } }
-    private fun shop(shop: String, note: String? = null, change: (ShopData) -> ShopData) = update(note) { it.copy(stores = it.stores + (shop to change(it.stores.getValue(shop)))) }
-    fun add(shop: String, item: Item) = shop(shop, "${item.name} added to $shop") { it.copy(items = Rules.add(it.items, item)) }
-    fun edit(shop: String, item: Item) = shop(shop, "Item updated") { it.copy(items = Rules.edit(it.items, item)) }
-    fun quantity(shop: String, id: String, delta: Int) = shop(shop) { it.copy(items = it.items.map { i -> if (i.id == id) Rules.changeQuantity(i, delta) else i }) }
-    fun complete(shop: String, id: String) = shop(shop) { it.copy(items = it.items.map { i -> if (i.id == id) i.copy(done = !i.done) else i }) }
-    fun remove(shop: String, id: String) = shop(shop, "Item removed") { it.copy(items = it.items.filterNot { i -> i.id == id }) }
-    fun favourite(shop: String, item: Item) = shop(shop, "Favourite saved for $shop") { Rules.favourite(it, item) }
-    fun removeFavourite(shop: String, item: Item) = shop(shop, "Favourite removed") { it.copy(favourites = it.favourites.filterNot { i -> i.key() == item.key() }) }
-    fun editFavourite(shop: String, old: Item, new: Item) = shop(shop, "Favourite updated") { Rules.favourite(it.copy(favourites = it.favourites.filterNot { i -> i.id == old.id }), new) }
+    fun select(shop: String) = update { state ->
+        val target = state.shop(shop) ?: error("Shop not found.")
+        require(!target.archived) { "Archived shops cannot be selected." }
+        state.copy(selectedShopId = target.id)
+    }
+    private fun shop(shopRef: String, note: String? = null, change: (ShopData) -> ShopData) = update(note) { state ->
+        val target = state.shop(shopRef) ?: error("Shop not found.")
+        require(!target.archived) { "This shop is archived." }
+        val current = state.stores[target.id] ?: ShopData()
+        val changed = change(current)
+        val scoped = changed.copy(
+            items = changed.items.map { it.copy(shopId = target.id) },
+            favourites = changed.favourites.map { it.copy(shopId = target.id) },
+            previous = changed.previous.map { it.copy(shopId = target.id) }
+        )
+        state.copy(stores = state.stores + (target.id to scoped))
+    }
+    private fun checkedForShop(state: ShoppingState, shopRef: String, item: Item): Item {
+        val target = state.shop(shopRef) ?: error("Shop not found.")
+        return Rules.checked(item.copy(shopId = target.id), target.id, state.allProducts)
+    }
+    fun add(shop: String, item: Item) = update("${item.name} added to $shop") { state ->
+        val target = state.shop(shop) ?: error("Shop not found.")
+        require(!target.archived)
+        val clean = checkedForShop(state, shop, item)
+        val data = state.stores.getValue(target.id)
+        state.copy(stores = state.stores + (target.id to Rules.add(data.items, clean).let { updated ->
+            data.copy(items = updated, associatedProductIds = data.associatedProductIds + clean.productId)
+        }))
+    }
+    fun edit(shop: String, item: Item) = update("Item updated") { state ->
+        val target = state.shop(shop) ?: error("Shop not found.")
+        val old = state.stores.getValue(target.id).items.firstOrNull { it.id == item.id } ?: error("Shopping item not found.")
+        val clean = checkedForShop(state, shop, item.copy(shopId = target.id, productId = old.productId))
+        val data = state.stores.getValue(target.id)
+        state.copy(stores = state.stores + (target.id to data.copy(items = Rules.edit(data.items, clean))))
+    }
+    fun quantity(shop: String, id: String, delta: Int) = this.shop(shop) { it.copy(items = it.items.map { i -> if (i.id == id) Rules.changeQuantity(i, delta) else i }) }
+    fun complete(shop: String, id: String) = this.shop(shop) { it.copy(items = it.items.map { i -> if (i.id == id) i.copy(done = !i.done) else i }) }
+    fun remove(shop: String, id: String) = this.shop(shop, "Item removed") { it.copy(items = it.items.filterNot { i -> i.id == id }) }
+    fun favourite(shop: String, item: Item) = this.shop(shop, "Favourite saved for $shop") { data -> Rules.favourite(data, item.copy(shopId = data.items.firstOrNull { it.productId == item.productId }?.shopId ?: item.shopId)) }
+    fun removeFavourite(shop: String, item: Item) = this.shop(shop, "Favourite removed") { it.copy(favourites = it.favourites.filterNot { i -> i.key() == item.key() }) }
+    fun editFavourite(shop: String, old: Item, new: Item) = this.shop(shop, "Favourite updated") { Rules.favourite(it.copy(favourites = it.favourites.filterNot { i -> i.id == old.id }), new.copy(shopId = old.shopId)) }
     fun custom(item: Item, shop: String, favourite: Boolean) = update("${item.name} saved") { s ->
         val clean = Rules.checked(item)
-        val product = Product(clean.name, "Other", "🛍", listOf(clean.variety), listOf(clean.size))
-        val d = s.stores.getValue(shop)
-        val added = d.copy(items = Rules.add(d.items, clean))
-        s.copy(custom = if (Catalogue.find(clean.name) != null) s.custom else s.custom.filterNot { it.name.equals(clean.name, true) } + product, stores = s.stores + (shop to if (favourite) Rules.favourite(added, clean) else added))
+        val target = s.shop(shop) ?: error("Shop not found.")
+        require(!target.archived)
+        val existing = s.allProducts.firstOrNull { it.name.equals(clean.name, true) }
+        val product = existing ?: Rules.checkedProduct(Product(clean.name, "Other", "🛍", listOf(clean.variety).filter(String::isNotBlank), listOf(clean.size).filter(String::isNotBlank), id = ProductIds.custom(), categoryId = CategoryIds.fromName("Other")))
+        val configured = if (existing?.builtIn == true) product else product.copy(
+            varieties = (product.varieties + clean.variety).filter(String::isNotBlank).distinctBy { it.lowercase() },
+            sizes = (product.sizes + clean.size).filter(String::isNotBlank).distinctBy { it.lowercase() }
+        )
+        val entry = clean.copy(name = configured.name, productId = configured.id, shopId = target.id)
+        Rules.checked(entry, target.id, s.allProducts + if (existing == null) listOf(configured) else emptyList())
+        val data = s.stores.getValue(target.id)
+        val withAssociation = data.copy(associatedProductIds = data.associatedProductIds + configured.id)
+        val added = withAssociation.copy(items = Rules.add(withAssociation.items, entry))
+        val products = when {
+            existing == null -> s.custom + configured
+            existing.builtIn -> s.custom
+            else -> s.custom.map { if (it.id == existing.id) configured else it }
+        }
+        s.copy(custom = products, stores = s.stores + (target.id to if (favourite) Rules.favourite(added, entry) else added))
     }
-    fun clearCompleted(shop: String) = shop(shop, "Completed items cleared") { d ->
+    fun saveProduct(product: Product) = update("Product saved to your catalogue") { state ->
+        val clean = Rules.checkedProduct(product)
+        require(state.allCategories.any { it.id == clean.categoryId }) { "Choose a saved category." }
+        require(state.allProducts.none { it.id != clean.id && it.name.equals(clean.name, true) }) { "A similar product already exists. Choose it from search to reuse it." }
+        val old = state.allProducts.firstOrNull { it.id == clean.id }
+        require(old == null || !old.builtIn) { "Bundled product definitions cannot be overwritten." }
+        state.copy(custom = if (old == null) state.custom + clean else state.custom.map { if (it.id == old.id) clean else it })
+    }
+    fun clearCompleted(shop: String) = this.shop(shop, "Completed items cleared") { d ->
         val cleared = d.items.filter { it.done }.map { it.copy(done = false) }
         d.copy(items = d.items.filterNot { it.done }, previous = cleared.fold(d.previous) { all, i -> if (all.any { it.key() == i.key() }) all.map { if (it.key() == i.key()) i else it } else all + i })
     }
-    fun fresh(shop: String) = shop(shop, "Fresh list ready. Previous items are saved.", Rules::fresh)
-    fun reuse(shop: String) = shop(shop, "Previous items added", Rules::reuse)
+    fun fresh(shop: String) = this.shop(shop, "Fresh list ready. Previous items are saved.", Rules::fresh)
+    fun reuse(shop: String) = this.shop(shop, "Previous items added", Rules::reuse)
+    fun createShop(name: String) = update("Shop added") { Rules.createShop(it, name) }
+    fun renameShop(shopId: String, name: String) = update("Shop renamed") { Rules.renameShop(it, shopId, name) }
+    fun archiveShop(shopId: String) = update("Shop archived. Its lists and favourites remain saved.") { Rules.archiveShop(it, shopId) }
+    fun associateProduct(shopId: String, productId: String) = update { Rules.associate(it, shopId, productId) }
+    fun disassociateProduct(shopId: String, productId: String) = update { Rules.disassociate(it, shopId, productId) }
+    fun createCategory(name: String) = update("Category added") { Rules.createCategory(it, name) }
+    fun setProductImageReference(productId: String, reference: ProductImageReference?) = update("Product image updated") { state ->
+        val product = state.custom.firstOrNull { it.id == productId } ?: error("Only user-created products can be edited.")
+        val safeReference = reference?.checked()
+        state.copy(custom = state.custom.map { if (it.id == productId) it.copy(image = safeReference) else it })
+    }
     fun export(uri: Uri) { viewModelScope.launch { mutex.withLock {
         try { val s = mutable.value ?: return@withLock; withContext(Dispatchers.IO) { getApplication<Application>().contentResolver.openOutputStream(uri, "wt")!!.use { it.write(Backup.encode(s).toByteArray(Charsets.UTF_8)) } }; message.value = "Backup saved" }
         catch (e: Exception) { message.value = "Backup could not be saved." }

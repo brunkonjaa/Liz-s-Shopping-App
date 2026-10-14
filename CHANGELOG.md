@@ -1,4 +1,11 @@
 # Changelog
+## Task 2 — Catalogue and storage model
+- Added stable product, category and shop IDs with shared product definitions, explicit product/shop associations, independent shop-scoped lists/favourites/previous items, and archive-based custom shop removal.
+- Added offline product match suggestions, custom product/category/shop domain operations, and per-entry product/shop references while keeping package size separate from package count.
+- Added transactional SQLite v1 → v2 payload migration, deterministic legacy product mapping, version-2 export and continued version-1 backup import.
+- Added app-private image-copy validation for JPEG/PNG/WebP (10 MiB, 4096 px and 12 MP limits), durable generated references, category fallback resolution and reference-aware deletion. Portable backups exclude local image bytes and use generic category fallbacks.
+- Added real v1 fixture, schema migration/rollback, v2 round-trip, invalid backup, shop/product/category and image-reference tests. See TESTING.md for fresh verification status.
+
 ## Validated fix — 2026-10-14
 - Keep confirmation snackbars out of the product editor and clear carried-over search focus/keyboard when opening it.
 - Wait for navigation controls in the Android journey instead of clicking before the editor has closed.

@@ -1,7 +1,18 @@
 package ie.suric.lizshopping
 
 object Catalogue {
-    private fun p(name: String, category: String, symbol: String, varieties: String, sizes: String) = Product(name, category, symbol, varieties.split('|'), sizes.split('|'))
+    private fun p(name: String, category: String, symbol: String, varieties: String, sizes: String) = Product(
+        name = name,
+        category = category,
+        symbol = symbol,
+        varieties = varieties.split('|'),
+        sizes = sizes.split('|'),
+        id = ProductIds.bundled(name),
+        categoryId = CategoryIds.fromName(category),
+        units = sizes.split('|').mapNotNull { Regex("([A-Za-z]+)\\)?$").find(it.trim())?.groupValues?.get(1) }.distinct(),
+        image = ProductImageReference("category", CategoryIds.fromName(category)),
+        builtIn = true
+    )
     val products = listOf(
         p("Milk", "Dairy and eggs", "🥛", "Whole|Low fat|Skimmed|Lactose free|Oat|Soy", "1 L|2 L|3 L"),
         p("Eggs", "Dairy and eggs", "🥚", "Regular|Free Range|Organic", "6 pack|12 pack|18 pack|24 pack"),
@@ -77,6 +88,7 @@ object Catalogue {
         p("Batteries", "Other", "🔋", "AA|AAA", "4 pack|8 pack")
     )
     val categories = products.map { it.category }.distinct()
+    val categoryDefinitions = categories.map { Category(CategoryIds.fromName(it), it, builtIn = true) }
     fun find(name: String) = products.firstOrNull { it.name.equals(name, true) }
     fun symbol(name: String) = find(name)?.symbol ?: "🛍"
 }
