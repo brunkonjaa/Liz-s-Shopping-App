@@ -1,11 +1,13 @@
 # Testing
 ## Evidence as of source delivery
-No Android build, automated test execution, lint execution, emulator run or representative-user testing has completed. Toolchain installation is a separately tracked job. Source checks alone do not prove APK functionality.
+GitHub Actions run 38491431476 (2026-10-14, commit ab1cef6) passed unit tests, lint, manifest inspection and debug APK assembly. Its Android 13 journey failed at ShoppingJourneyTest.kt:59 after saving eggs: the Shopping List navigation node was absent. APK assembly success does not establish runtime correctness.
+
+The editor now hides previous confirmation snackbars and clears keyboard focus on entry so overlays cannot cover editor actions. Journey navigation explicitly waits for the destination controls. Screenshots and semantics are written to the instrumentation additional-output directory, which Gradle retrieves before uninstalling the app; the old adb collector produced `run-as: unknown package` text files instead of PNG images. Fresh Android validation of these changes is pending.
 
 ## Automated tests provided
 RulesTest: 17 tests covering pack-count separation, normalized duplicate merge, variety/size differences, quantity bounds, edit collision, favourite independence, fresh/reuse, completion reopening, favourite replacement, key catalogue presets, custom weights and invalid text/quantity.
 StorageTest: 9 Robolectric Android 13 tests covering backup round-trip, shop independence, SQLite reopen, unknown version/shop, size limit, fractional quantity, failed restore data preservation and plain-text custom input.
-ShoppingJourneyTest: Compose Android test for shop selection, search, two cartons of milk, list addition, completion and undo. Run on a clean test installation; it changes app data.
+ShoppingJourneyTest: Compose Android test for shop selection, search, two cartons of milk, completion and undo, eggs, favourite quantity independence, shop isolation and custom items. Run on a clean test installation; it changes app data.
 
 ## Required validation commands
 `./gradlew testDebugUnitTest lintDebug assembleDebug`

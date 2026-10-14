@@ -21,6 +21,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -59,6 +61,15 @@ fun ShoppingApp(vm: ShoppingViewModel = viewModel()) {
     var more by remember { mutableStateOf(false) }
     var confirm by remember { mutableStateOf<String?>(null) }
     val snack = remember { SnackbarHostState() }
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(editing) {
+        if (editing != null) {
+            focusManager.clearFocus()
+            keyboard?.hide()
+            snack.currentSnackbarData?.dismiss()
+        }
+    }
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let(vm::export) }
     val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::readBackup) }
     LaunchedEffect(message) { message?.let { snack.showSnackbar(it); vm.message.value = null } }
@@ -66,7 +77,7 @@ fun ShoppingApp(vm: ShoppingViewModel = viewModel()) {
     BackHandler(!choosing || editing != null) { if (editing != null) editing = null else { choosing = true; query = ""; category = null } }
     Scaffold(
         containerColor = Background,
-        snackbarHost = { SnackbarHost(snack) },
+        snackbarHost = { if (editing == null) SnackbarHost(snack) },
         topBar = {
             Column(Modifier.statusBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

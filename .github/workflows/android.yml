@@ -102,5 +102,5 @@ jobs:
           path: |
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
-            app/build/qa-screenshots/
+            app/build/outputs/connected_android_test_additional_output/
           if-no-files-found: ignore
