@@ -94,11 +94,13 @@ jobs:
           emulator-boot-timeout: 180
           disable-animations: true
           script: |
-            ./gradlew --no-daemon connectedDebugAndroidTest
+            result=0
+            ./gradlew --no-daemon connectedDebugAndroidTest || result=$?
             mkdir -p app/build/qa-screenshots
-            adb exec-out run-as ie.suric.lizshopping cat files/shops.png > app/build/qa-screenshots/shops.png
-            adb exec-out run-as ie.suric.lizshopping cat files/milk-editor.png > app/build/qa-screenshots/milk-editor.png
-            adb exec-out run-as ie.suric.lizshopping cat files/shopping-list.png > app/build/qa-screenshots/shopping-list.png
+            for screen in shops milk-editor shopping-list after-test; do
+              adb exec-out run-as ie.suric.lizshopping cat "files/$screen.png" > "app/build/qa-screenshots/$screen.png" || true
+            done
+            exit "$result"
       - name: Upload emulator reports
         if: always()
         uses: actions/upload-artifact@v4
