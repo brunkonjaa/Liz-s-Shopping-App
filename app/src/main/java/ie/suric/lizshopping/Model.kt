@@ -172,7 +172,7 @@ object Rules {
 
     fun checked(item: Item, shopId: String, products: List<Product>): Item {
         val clean = checked(item.copy(shopId = shopId))
-        val product = products.firstOrNull { it.id == clean.productId } ?: error("The selected catalogue product no longer exists.")
+        val product = products.firstOrNull { it.id == clean.productId } ?: throw IllegalArgumentException("The selected catalogue product no longer exists.")
         require(clean.name.equals(product.name, true)) { "Shopping item name must match its catalogue product." }
         require(clean.variety.isBlank() || product.varieties.isEmpty() || product.varieties.any { it.equals(clean.variety, true) }) { "Choose a supported product variety." }
         require(clean.size.isBlank() || product.sizes.isEmpty() || product.sizes.any { it.equals(clean.size, true) }) { "Choose a supported size or unit." }

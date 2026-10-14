@@ -219,7 +219,7 @@ object Backup {
         return when (root.getInt("version")) {
             1 -> migrateV1(raw)
             CURRENT_VERSION -> decodeV2(root, sanitizeLocalImages)
-            else -> error("Unsupported backup format.")
+            else -> throw IllegalArgumentException("Unsupported backup format.")
         }
     }
     /** Decode a portable user-selected backup; local image keys always fall back safely. */
