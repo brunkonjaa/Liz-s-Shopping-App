@@ -57,6 +57,15 @@ class RulesTest {
         assertEquals(Catalogue.products.size, Catalogue.products.distinctBy { it.id }.size)
         assertEquals(Catalogue.products.size, Catalogue.products.size)
     }
+    @Test fun creatingDistinctProductDoesNotChangeSuggestedProductAndExactDuplicateIsRejected() {
+        val base = ShoppingState()
+        val original = Catalogue.find("Tomatoes")!!
+        val distinct = Product("Cherry Tomatoes", original.category, "🍅", listOf("Cherry"), listOf("250 g"), id = ProductIds.custom(), categoryId = original.categoryId)
+        val expanded = Rules.createProduct(base, distinct)
+        assertEquals(original, Catalogue.find("Tomatoes"))
+        assertNotEquals(original.id, expanded.custom.single().id)
+        try { Rules.createProduct(expanded, distinct.copy(id = ProductIds.custom())); fail("Duplicate was accepted") } catch (_: IllegalArgumentException) { }
+    }
     @Test fun customShopHasStableIdentityAndArchivePreservesItsData() {
         val withShop = Rules.createShop(ShoppingState(), "Dealz")
         val dealz = withShop.shopDirectory.single { it.name == "Dealz" }

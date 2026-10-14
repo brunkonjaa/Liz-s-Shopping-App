@@ -169,6 +169,15 @@ object Rules {
         product.image?.checked()
         return product.copy(name = name, category = category, varieties = varieties, sizes = sizes, units = product.units.map { text(it, true) }.distinct(), description = product.description?.let(::text))
     }
+    fun createProduct(state: ShoppingState, product: Product): ShoppingState {
+        val clean = checkedProduct(product)
+        require(!clean.builtIn && clean.id.startsWith("product:custom:")) { "New products need a generated user-product identity." }
+        require(state.allCategories.any { it.id == clean.categoryId }) { "Choose a saved category." }
+        require(state.allProducts.none { it.id == clean.id || it.name.equals(clean.name, true) }) {
+            "A matching product already exists. Select it from the catalogue to reuse it, or choose a distinct name."
+        }
+        return state.copy(custom = state.custom + clean)
+    }
 
     fun checked(item: Item, shopId: String, products: List<Product>): Item {
         val clean = checked(item.copy(shopId = shopId))

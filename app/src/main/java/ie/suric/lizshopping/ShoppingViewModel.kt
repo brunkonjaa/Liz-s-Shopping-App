@@ -81,23 +81,15 @@ class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
         val clean = Rules.checked(item)
         val target = s.shop(shop) ?: error("Shop not found.")
         require(!target.archived)
-        val existing = s.allProducts.firstOrNull { it.name.equals(clean.name, true) }
-        val product = existing ?: Rules.checkedProduct(Product(clean.name, "Other", "🛍", listOf(clean.variety).filter(String::isNotBlank), listOf(clean.size).filter(String::isNotBlank), id = ProductIds.custom(), categoryId = CategoryIds.fromName("Other")))
-        val configured = if (existing?.builtIn == true) product else product.copy(
-            varieties = (product.varieties + clean.variety).filter(String::isNotBlank).distinctBy { it.lowercase() },
-            sizes = (product.sizes + clean.size).filter(String::isNotBlank).distinctBy { it.lowercase() }
-        )
+        val product = Rules.checkedProduct(Product(clean.name, "Other", "🛍", listOf(clean.variety).filter(String::isNotBlank), listOf(clean.size).filter(String::isNotBlank), id = ProductIds.custom(), categoryId = CategoryIds.fromName("Other")))
+        val configured = product
         val entry = clean.copy(name = configured.name, productId = configured.id, shopId = target.id)
-        Rules.checked(entry, target.id, s.allProducts + if (existing == null) listOf(configured) else emptyList())
+        Rules.checked(entry, target.id, s.allProducts + configured)
         val data = s.stores.getValue(target.id)
         val withAssociation = data.copy(associatedProductIds = data.associatedProductIds + configured.id)
         val added = withAssociation.copy(items = Rules.add(withAssociation.items, entry))
-        val products = when {
-            existing == null -> s.custom + configured
-            existing.builtIn -> s.custom
-            else -> s.custom.map { if (it.id == existing.id) configured else it }
-        }
-        s.copy(custom = products, stores = s.stores + (target.id to if (favourite) Rules.favourite(added, entry) else added))
+        val withProduct = Rules.createProduct(s, configured)
+        withProduct.copy(stores = withProduct.stores + (target.id to if (favourite) Rules.favourite(added, entry) else added))
     }
     fun saveProduct(product: Product) = update("Product saved to your catalogue") { state ->
         val clean = Rules.checkedProduct(product)
