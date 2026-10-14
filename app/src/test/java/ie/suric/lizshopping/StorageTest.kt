@@ -52,8 +52,9 @@ class StorageTest {
     }
     @Test fun bundledImageReferenceRoundTripsWithoutNetworkOrUri() {
         val reference = ProductImageReference("bundled", "milk")
-        val product = sample().custom.single().copy(image = reference)
-        assertEquals(reference, Backup.decode(Backup.encode(sample().copy(custom = listOf(product)))).custom.single().image)
+        val source = sample()
+        val product = source.custom.single().copy(image = reference)
+        assertEquals(reference, Backup.decode(Backup.encode(source.copy(custom = listOf(product)))).custom.single().image)
     }
     @Test fun sqliteSnapshotRetainsAppOwnedLocalImageReferenceAcrossRestart() {
         val app = RuntimeEnvironment.getApplication(); val name = "image-${System.nanoTime()}.db"
@@ -69,8 +70,9 @@ class StorageTest {
     }
     @Test fun sqliteSnapshotSurvivesConnectionRestart() {
         val app = RuntimeEnvironment.getApplication(); val name = "test-${System.nanoTime()}.db"
-        LocalStore(app, name).use { it.save(sample()) }
-        LocalStore(app, name).use { assertEquals(sample(), it.load()) }
+        val source = sample()
+        LocalStore(app, name).use { it.save(source) }
+        LocalStore(app, name).use { assertEquals(source, it.load()) }
         app.deleteDatabase(name)
     }
     @Test fun version1BackupImportsAndPreservesAllLegacyFields() {
@@ -133,11 +135,12 @@ class StorageTest {
         app.deleteDatabase(name)
     }
     @Test fun v2RejectsUnknownProductReferenceWithoutReplacingState() {
-        val valid = Backup.encode(sample())
+        val source = sample()
+        val valid = Backup.encode(source)
         val json = JSONObject(valid)
         json.getJSONArray("stores").getJSONObject(0).getJSONArray("items").getJSONObject(0).put("productId", "missing-product")
         try { Backup.decode(json.toString()); fail("Unknown product reference accepted") } catch (_: IllegalArgumentException) { }
-        assertEquals(sample(), Backup.decode(valid))
+        assertEquals(source, Backup.decode(valid))
     }
 
     private fun version1Payload(): String {
