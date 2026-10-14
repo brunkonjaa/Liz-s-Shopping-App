@@ -2,7 +2,7 @@
 Native Kotlin / Jetpack Compose grocery-list app for Lidl, Aldi, Dunnes Stores and SuperValu. No accounts, network permission, adverts or trackers.
 
 ## Current status
-Source implementation 0.1.0. GitHub Actions run 38491431476 passed unit tests, lint, manifest checks and debug APK assembly. The Android 13 journey failed after saving eggs. Editor overlay and test diagnostics fixes have been applied; a fresh journey result is pending. See TESTING.md.
+Source implementation 0.1.0. GitHub Actions run 38496681250 passed unit tests, lint, manifest checks, debug APK assembly and the complete Android 13 shopping journey on commit 6025f96. Representative-user usability, physical Samsung A12 behaviour and the remaining manual acceptance criteria are unverified. See TESTING.md.
 
 ## Build
 Use JDK 17, Android SDK 37 and Gradle 9.4.1. Install SDK platform 37 and build-tools 36.0.0. Open this folder in Android Studio, set the SDK path in `local.properties`, and sync.
