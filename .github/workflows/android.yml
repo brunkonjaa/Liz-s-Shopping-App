@@ -69,6 +69,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.4.1'
+      - name: Free space for the Android system image
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk
+          df -h /
       - name: Enable KVM for ephemeral emulator
         run: |
           sudo usermod -aG kvm "$USER"
