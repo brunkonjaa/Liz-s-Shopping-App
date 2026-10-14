@@ -66,7 +66,7 @@ class StorageTest {
     }
     @Test fun missingLocalImageUsesGenericCategoryFallback() = runBlocking {
         val product = sample().custom.single().copy(image = ProductImageReference("local", "123e4567-e89b-12d3-a456-426614174000.jpg"))
-        assertEquals(ProductImageReference("category", product.categoryId), ProductImageStore(RuntimeEnvironment.getApplication<Application>().filesDir).referenceOrCategoryFallback(product))
+        assertEquals(ProductImageReference("category", product.categoryId), ProductImageStore(RuntimeEnvironment.getApplication().filesDir).referenceOrCategoryFallback(product))
     }
     @Test fun sqliteSnapshotSurvivesConnectionRestart() {
         val app = RuntimeEnvironment.getApplication(); val name = "test-${System.nanoTime()}.db"
