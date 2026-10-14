@@ -7,7 +7,7 @@
 - Keep favourite defaults independent from list edits. Preserve saved data on errors.
 - Validate complete backups before transactional replacement. Imports are bounded to 1 MiB.
 - Run unit tests, lint, build and the emulator journey before claiming a tested APK.
-- Maintain the seven project documents. Report unverified behaviour explicitly.
+- Keep project documentation aligned with implementation and report unverified behaviour explicitly.
 - Do not use destructive schema upgrades. Add and test explicit migrations from real prior-format fixtures; preserve source payloads and rely on SQLite transaction rollback on failure.
 - Keep SQLite and JSON payload versions explicit. Version-1 JSON backups remain importable; export validated version 2 JSON under the 1 MiB limit.
 - Product image bytes stay offline and app-private. Copy picker content, validate format/size/dimensions, persist only app-owned keys, and use category fallbacks when image references are absent. Do not add internet permission.

@@ -53,6 +53,7 @@ class RulesTest {
     @Test fun searchSuggestsPluralAndPartialMatchesWithoutMerging() {
         val matches = ProductSearch.suggest(Catalogue.products, "  TOMATO ")
         assertTrue(matches.any { it.name == "Tomatoes" })
+        assertTrue(ProductSearch.suggest(Catalogue.products, "Fresh tomatoes").any { it.name == "Tomatoes" })
         assertEquals(Catalogue.products.size, Catalogue.products.distinctBy { it.id }.size)
         assertEquals(Catalogue.products.size, Catalogue.products.size)
     }

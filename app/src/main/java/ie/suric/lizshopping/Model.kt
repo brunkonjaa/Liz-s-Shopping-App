@@ -220,7 +220,8 @@ object ProductSearch {
         if (variants.any { it == query }) return 100
         if (variants.any { it.startsWith(query) || it.contains(query) }) return 80
         val words = name.split(' ')
-        if (query.split(' ').all { token -> words.any { it.startsWith(token) || singular(it) == token } }) return 65
+        val searchWords = query.split(' ').filterNot { it in setOf("fresh", "the", "product", "regular") }
+        if (searchWords.isNotEmpty() && searchWords.all { token -> words.any { it.startsWith(token) || singular(it) == token } }) return 65
         return null
     }
     private fun normalize(value: String) = value.trim().lowercase(Locale.ROOT).replace(Regex("[^\\p{L}\\p{N}]+"), " ").trim().replace(Regex("\\s+"), " ")

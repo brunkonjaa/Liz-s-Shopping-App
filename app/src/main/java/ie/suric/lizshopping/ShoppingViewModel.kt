@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 
 class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
     private val store = LocalStore(app)
+    private val imageStore = ProductImageStore(app.filesDir)
     private val mutex = Mutex()
     private val mutable = MutableStateFlow<ShoppingState?>(null)
     val state = mutable.asStateFlow()
@@ -118,10 +119,38 @@ class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
     fun associateProduct(shopId: String, productId: String) = update { Rules.associate(it, shopId, productId) }
     fun disassociateProduct(shopId: String, productId: String) = update { Rules.disassociate(it, shopId, productId) }
     fun createCategory(name: String) = update("Category added") { Rules.createCategory(it, name) }
-    fun setProductImageReference(productId: String, reference: ProductImageReference?) = update("Product image updated") { state ->
-        val product = state.custom.firstOrNull { it.id == productId } ?: error("Only user-created products can be edited.")
-        val safeReference = reference?.checked()
-        state.copy(custom = state.custom.map { if (it.id == productId) it.copy(image = safeReference) else it })
+    fun importProductImage(productId: String, uri: Uri) {
+        viewModelScope.launch { mutex.withLock {
+            var imported: ProductImageReference? = null
+            try {
+                val current = mutable.value ?: error("Shopping data is not ready.")
+                val product = current.custom.firstOrNull { it.id == productId } ?: error("Only user-created products can be edited.")
+                imported = imageStore.importSelected(getApplication<Application>().contentResolver, uri)
+                val next = current.copy(custom = current.custom.map { if (it.id == productId) it.copy(image = imported) else it })
+                withContext(Dispatchers.IO) { store.save(next) }
+                mutable.value = next
+                withContext(Dispatchers.IO) { imageStore.deleteIfUnreferenced(product.image, next.allProducts) }
+                message.value = "Product image updated"
+            } catch (e: Exception) {
+                imported?.let { reference -> withContext(Dispatchers.IO) { imageStore.deleteIfUnreferenced(reference, mutable.value?.allProducts.orEmpty()) } }
+                message.value = e.message ?: "Product image could not be saved."
+            }
+        } }
+    }
+    fun setProductImageReference(productId: String, reference: ProductImageReference?) {
+        viewModelScope.launch { mutex.withLock {
+            try {
+                val current = mutable.value ?: return@withLock
+                val old = current.custom.firstOrNull { it.id == productId } ?: error("Only user-created products can be edited.")
+                val safeReference = reference?.checked()
+                require(safeReference == null || safeReference.kind != "local") { "Use the image picker so local image files are copied into app storage." }
+                val next = current.copy(custom = current.custom.map { if (it.id == productId) it.copy(image = safeReference) else it })
+                withContext(Dispatchers.IO) { store.save(next) }
+                mutable.value = next
+                withContext(Dispatchers.IO) { imageStore.deleteIfUnreferenced(old.image, next.allProducts) }
+                message.value = "Product image updated"
+            } catch (e: Exception) { message.value = e.message ?: "Product image could not be saved." }
+        } }
     }
     fun export(uri: Uri) { viewModelScope.launch { mutex.withLock {
         try { val s = mutable.value ?: return@withLock; withContext(Dispatchers.IO) { getApplication<Application>().contentResolver.openOutputStream(uri, "wt")!!.use { it.write(Backup.encode(s).toByteArray(Charsets.UTF_8)) } }; message.value = "Backup saved" }

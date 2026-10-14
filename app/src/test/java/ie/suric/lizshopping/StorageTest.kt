@@ -10,6 +10,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import kotlinx.coroutines.runBlocking
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
@@ -61,6 +62,10 @@ class StorageTest {
         LocalStore(app, name).use { it.save(source.copy(custom = listOf(local))) }
         LocalStore(app, name).use { assertEquals(local.image, it.load().custom.single().image) }
         app.deleteDatabase(name)
+    }
+    @Test fun missingLocalImageUsesGenericCategoryFallback() = runBlocking {
+        val product = sample().custom.single().copy(image = ProductImageReference("local", "123e4567-e89b-12d3-a456-426614174000.jpg"))
+        assertEquals(ProductImageReference("category", product.categoryId), ProductImageStore(RuntimeEnvironment.getApplication<Application>().filesDir).referenceOrCategoryFallback(product))
     }
     @Test fun sqliteSnapshotSurvivesConnectionRestart() {
         val app = RuntimeEnvironment.getApplication(); val name = "test-${System.nanoTime()}.db"

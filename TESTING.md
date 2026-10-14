@@ -14,7 +14,7 @@ ShoppingJourneyTest: Compose Android test for shop selection, search, two carton
 ## Task 2 coverage added
 The updated `RulesTest` covers stable product/shop/category IDs, shop-scoped duplicate merging, cross-shop separation, tomato singular/plural search suggestions, custom shop validation/archive, custom category/product references and unchanged catalogue definitions.
 
-The updated `StorageTest` uses a concrete v1 JSON fixture and covers deterministic migration of entry IDs, configurations, quantities, completion, favourites, previous items, custom products and selected shop; SQLite schema 1 → 2; rollback after a simulated malformed v1 row; v1 backup import; v2 round-trip; custom shop/category/product restart persistence; local image key persistence in the private snapshot; portable image fallback; and malformed/oversized/unknown-reference rejection without replacement.
+The updated `StorageTest` uses a concrete v1 JSON fixture and covers deterministic migration of entry IDs, configurations, quantities, completion, favourites, previous items, custom products and selected shop; SQLite schema 1 → 2; rollback after a simulated malformed v1 row; v1 backup import; v2 round-trip; custom shop/category/product restart persistence; local image key persistence in the private snapshot; portable image fallback; missing-image category fallback; and malformed/oversized/unknown-reference rejection without replacement.
 
 `ProductImageStore` validates JPEG, PNG and WebP signatures, file size and image bounds before copying to app-private storage. This task adds the storage service but not the visual image picker or rendered image cards. Picker/device image flows remain unverified until the later UI tasks and emulator/device checks.
 
