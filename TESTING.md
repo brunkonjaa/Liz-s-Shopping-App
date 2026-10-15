@@ -23,6 +23,13 @@
 
 The API 37 emulator remains unverified. Its previous startup/high-CPU issue remains outstanding, and no claim is made that the emulator journey passed.
 
+## Task 5 acceptance evidence - 2026-10-15
+
+- Fresh `testDebugUnitTest`, `lintDebug`, `assembleDebug` and `connectedDebugAndroidTest` runs passed on the current checkout. The connected test completed 1 test with 0 failures on Samsung SM-A127F / Android 13.
+- A debug APK was installed without clearing the dedicated test installation. Manual evidence under ignored `verification/task5/` covers first launch, Lidl product search/configuration, quantity/favourite/add-to-list, completion, force-stop/restart persistence, Aldi list isolation, and light/dark theme inspection.
+- The manual restart retained the controlled Lidl completion state and Aldi remained independent. Device reboot, in-place update, backup/restore UI, TalkBack, large fonts, landscape and API 37 remain **NOT VERIFIED**.
+- The Task 5 acceptance report records the exact command results, APK checksum, screenshots, security checks and release-readiness decision.
+
 ## Coverage limits
 
 The connected journey does not cover custom-shop creation, product image selection, v1 database upgrade on a physical target, backup/restore UI error paths, large font sizes, TalkBack, landscape or representative-user behaviour. The new sheet workflows still require a fresh connected-device run and are not claimed verified from compilation alone.
