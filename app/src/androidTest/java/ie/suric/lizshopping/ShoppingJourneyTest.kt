@@ -35,6 +35,14 @@ class ShoppingJourneyTest {
         }
     }
 
+    private fun logShoppingState(label: String) {
+        rule.waitForIdle()
+        val current = ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].state.value
+        val selected = current?.selected
+        val items = selected?.let { current.dataFor(it).items }.orEmpty()
+        Log.e("ShoppingJourneyState", "$label selected=$selected items=${items.map { it.name + " x" + it.quantity }} message=${ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].message.value}")
+    }
+
     private fun ensureBreadFavourite() {
         val saveDescription = "Save Bread as favourite"
         if (rule.onAllNodesWithContentDescription(saveDescription).fetchSemanticsNodes().isNotEmpty()) {
@@ -65,7 +73,9 @@ class ShoppingJourneyTest {
         rule.onNodeWithText("Search for a product").performTextInput("Bread")
         waitForText("Bread")
         rule.onNodeWithContentDescription("Add Bread to shopping list").performClick()
+        logShoppingState("afterFirstBreadAdd")
         rule.onNodeWithContentDescription("Add Bread to shopping list").performClick()
+        logShoppingState("afterSecondBreadAdd")
 
         rule.onAllNodesWithText("Shopping List").onFirst().performClick()
         waitForText("Bread")
