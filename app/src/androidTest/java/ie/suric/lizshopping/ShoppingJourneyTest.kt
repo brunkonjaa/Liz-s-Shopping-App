@@ -43,6 +43,14 @@ class ShoppingJourneyTest {
         Log.e("ShoppingJourneyState", "$label selected=$selected items=${items.map { it.name + " x" + it.quantity }} message=${ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].message.value}")
     }
 
+    private fun waitForBreadQuantity(expected: Int) {
+        rule.waitUntil(10_000) {
+            val current = ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].state.value
+            val selected = current?.selected ?: return@waitUntil false
+            current.dataFor(selected).items.any { it.name.equals("Bread", true) && it.quantity == expected }
+        }
+    }
+
     private fun ensureBreadFavourite() {
         val saveDescription = "Save Bread as favourite"
         if (rule.onAllNodesWithContentDescription(saveDescription).fetchSemanticsNodes().isNotEmpty()) {
@@ -73,12 +81,15 @@ class ShoppingJourneyTest {
         rule.onNodeWithText("Search for a product").performTextInput("Bread")
         waitForText("Bread")
         rule.onNodeWithContentDescription("Add Bread to shopping list").performClick()
+        waitForBreadQuantity(1)
         logShoppingState("afterFirstBreadAdd")
         rule.onNodeWithContentDescription("Add Bread to shopping list").performClick()
+        waitForBreadQuantity(2)
         logShoppingState("afterSecondBreadAdd")
 
         rule.onAllNodesWithText("Shopping List").onFirst().performClick()
         waitForText("Bread")
+        rule.onNodeWithText("×2").assertExists()
 
         // Quantity changes stay on the list and tolerate rapid repeated taps.
         repeat(5) { rule.onNodeWithContentDescription("Increase Bread quantity").performClick() }
@@ -97,6 +108,7 @@ class ShoppingJourneyTest {
         rule.onAllNodesWithText("Favourites").onFirst().performClick()
         waitForText("Bread")
         rule.onNodeWithContentDescription("Add Bread to shopping list").performClick()
+        waitForBreadQuantity(7)
         rule.onAllNodesWithText("Shopping List").onFirst().performClick()
         waitForText("Your shopping list for Lidl")
 
