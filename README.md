@@ -1,29 +1,35 @@
 # Liz's Shopping List
-Native Kotlin / Jetpack Compose grocery-list app for Lidl, Aldi, Dunnes Stores and SuperValu. No accounts, network permission, adverts or trackers.
 
-## Current status
-Source implementation 0.1.0. GitHub Actions run 38496681250 passed unit tests, lint, manifest checks, debug APK assembly and the complete Android 13 shopping journey on commit 6025f96. Representative-user usability, physical Samsung A12 behaviour and the remaining manual acceptance criteria are unverified. See TESTING.md.
+Native Kotlin and Jetpack Compose grocery-list app for Lidl, Aldi, Dunnes Stores and SuperValu. It is offline-first and uses private SQLite snapshot storage; it has no accounts, network services, adverts, trackers or pricing.
 
-## Build
-Use JDK 17, Android SDK 37 and Gradle 9.4.1. Install SDK platform 37 and build-tools 36.0.0. Open this folder in Android Studio, set the SDK path in `local.properties`, and sync.
+## Implemented
 
-The Gradle wrapper is included. To regenerate it with Gradle 9.4.1 available:
-```
-gradle wrapper --gradle-version 9.4.1
-./gradlew testDebugUnitTest lintDebug assembleDebug
-```
-APK output: `app/build/outputs/apk/debug/app-debug.apk`.
+- Stable reusable catalogue product IDs and shop IDs.
+- Independent shop lists, favourites, previous items, quantities and completion states.
+- Persisted custom shops with rename and conservative deletion safeguards.
+- Version-2 JSON backup/restore with bounded validation and version-1 import compatibility.
+- Explicit SQLite schema v1-to-v2 migration with transactional failure preservation.
+- Bounded Android document-picker image import into app-private storage, with durable references and backup metadata.
+- Task 3 warm editorial UI, drawer, light/dark/system appearance, catalogue, favourites and shopping-list flows.
+- Task 7 responsive interaction pass: direct catalogue Add actions, optimistic quantity feedback with rollback, saved-list launch routing, target-aware transitions and explicit action semantics.
 
-Run the instrumented journey on an Android 13 emulator:
-```
-adb shell pm clear ie.suric.lizshopping
+## Build and verification
+
+Use JDK 17, Android SDK 37 and the included Gradle wrapper:
+
+```text
+./gradlew testDebugUnitTest
+./gradlew lintDebug
+./gradlew assembleDebug
 ./gradlew connectedDebugAndroidTest
 ```
-The debug build uses the standard development certificate; it is not a permanent release-signing configuration. No release credentials have been created.
 
-## Use
-Choose a shop, search or browse, select a product, choose size and quantity, then add it. Open Shopping List to tick purchases off. Save favourite configurations in the product editor; add them with one tap from Favourites. Create any other product using Add custom item.
+On 2026-10-15, unit tests, lint, debug APK assembly and the connected Android journey all passed on the available Samsung SM-A127F running Android 13. The API 37 emulator remains unverified because its previously observed startup/high-CPU issue has not been resolved; see `TESTING.md` for the evidence boundary.
 
-Shopping options contains fresh-list, completed clearing, previous-item reuse and local backup/restore. Clearing needs confirmation. Backup restore replaces all saved data only after validation and confirmation. A previous-item set is kept per shop, not a full historical archive.
+Task 1 repository audit and architecture review are complete. Task 2 catalogue architecture recovery and Task 3 visual redesign are preserved in this branch. Task 4 adds shared Material 3 bottom sheets for shop selection/creation/management, product configuration and shopping-list options while preserving the Task 3 architecture and offline data model. See `TASK_4_IMPLEMENTATION.md` and `TESTING.md` for the implementation boundary and fresh verification evidence.
 
-Suggested varieties and sizes are generic presets, not confirmed shop inventory. Grocery icons are system emoji; shop names are text identifiers rather than licensed logo assets.
+Task 7 evidence and limitations are recorded in `docs/TASK7_INTERACTION_AND_PERFORMANCE_REPORT.md`.
+
+## Scope limits
+
+Large-font/TalkBack checks, representative-user checks, screenshot comparison, physical-device persistence verification and release-signing validation remain open until directly executed. Private visual references and handover notes stay ignored and are not uploaded to GitHub.

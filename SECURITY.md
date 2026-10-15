@@ -1,16 +1,15 @@
 # Security and privacy
-## Threat model
-Data is an ordinary household grocery list. Relevant risks: malicious or malformed backup files, accidental bulk deletion, interrupted writes, unnecessary exposure and unintended network collection. Rooted/unlocked device access and exported backup access are outside the app's private-storage boundary.
 
-## Controls
-- Zero requested Android permissions; no INTERNET permission, network SDK, analytics, ads, secret or server.
-- One exported component: launcher activity, required for Android to launch the app. No services or providers.
-- Private SQLite database. Parameter-bound ContentValues writes and fixed queries; input never becomes SQL or HTML.
-- Atomic snapshot transactions; failed writes leave prior state intact.
-- Bounded backup read (1 MiB); known format/version/shops, string length and control-character checks, strict integer quantity and boolean status checks, bounded collections, unique identities.
-- Restore confirms replacement only after complete validation. Bulk list operations require confirmation.
-- SAF file grants only, no storage permission. Exported files are readable by anyone the user shares them with. No device-wide file scanning.
-- Android automatic cloud backup is disabled. Manual backups remain under user control.
-- No custom encryption/authentication: private Android app storage is proportionate for this data.
+## Controls implemented
 
-MASVS storage, platform and code principles informed this design. This is not a MASVS certification. Merged manifest, dependency inspection, lint and adversarial input execution remain pending. No permanent signing credentials were generated.
+- No Android permissions, `INTERNET` permission, network SDK, account, analytics, adverts or server were added.
+- Grocery data remains in private SQLite storage. Snapshot writes use parameter-bound values and a transaction; failed writes leave the previous state intact.
+- Database schema upgrades are explicit. Version 1 is decoded and migrated to version 2 only after complete validation; failed migration does not intentionally replace data with an empty state.
+- Backup input is bounded to 1 MiB and validates format versions, stable ID uniqueness, shop/product references, text, quantities, booleans, image metadata and collection sizes before restore.
+- Restore uses a validated pending state and transactional save. Existing data is not changed when parsing or saving fails.
+- User images use the Android document picker, bounded byte/dimension processing, generated app-private filenames and path-traversal checks. Ephemeral picker URIs are not persisted as the only reference.
+- Automatic cloud backup remains disabled. Manual backups are user-selected through SAF; no device-wide file scanning is used.
+
+## Remaining review items
+
+Adversarial input execution, formal MASVS review, full accessibility review and release-signing review remain unverified. Custom encryption/authentication is not planned for this small private household app.

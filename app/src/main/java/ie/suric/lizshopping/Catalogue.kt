@@ -1,7 +1,7 @@
 package ie.suric.lizshopping
 
 object Catalogue {
-    private fun p(name: String, category: String, symbol: String, varieties: String, sizes: String) = Product(name, category, symbol, varieties.split('|'), sizes.split('|'))
+    private fun p(name: String, category: String, symbol: String, varieties: String, sizes: String) = Product(name, category, symbol, varieties.split('|'), sizes.split('|'), imageRef = "builtin:${stableKey(name)}")
     val products = listOf(
         p("Milk", "Dairy and eggs", "🥛", "Whole|Low fat|Skimmed|Lactose free|Oat|Soy", "1 L|2 L|3 L"),
         p("Eggs", "Dairy and eggs", "🥚", "Regular|Free Range|Organic", "6 pack|12 pack|18 pack|24 pack"),

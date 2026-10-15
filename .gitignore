@@ -3,3 +3,15 @@
 local.properties
 *.jks
 *.keystore
+
+# Local design/context files; do not upload to GitHub.
+/Examples and files for context_not to be uploaded to github/
+
+# Private personal handover notes.
+/private-handover/
+
+# Local IDE/compiler and runtime verification output.
+/.kotlin/
+/.vscode/
+/screenshots/
+/verification/
