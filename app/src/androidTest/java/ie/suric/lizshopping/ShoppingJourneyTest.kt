@@ -22,6 +22,15 @@ class ShoppingJourneyTest {
         }
     }
 
+    private fun ensureBreadFavourite() {
+        val saveDescription = "Save Bread as favourite"
+        if (rule.onAllNodesWithContentDescription(saveDescription).fetchSemanticsNodes().isNotEmpty()) {
+            rule.onNodeWithContentDescription(saveDescription).performClick()
+        } else {
+            rule.onNodeWithContentDescription("Remove Bread from favourites").assertExists()
+        }
+    }
+
     @After
     fun captureFinalState() {
         rule.waitForIdle()
@@ -61,7 +70,7 @@ class ShoppingJourneyTest {
         waitForText("Search for a product")
         rule.onNodeWithText("Search for a product").performTextInput("Bread")
         waitForText("Bread")
-        rule.onNodeWithContentDescription("Save Bread as favourite").performClick()
+        ensureBreadFavourite()
         rule.onAllNodesWithText("Favourites").onFirst().performClick()
         waitForText("Bread")
         rule.onNodeWithContentDescription("Add Bread to shopping list").performClick()
