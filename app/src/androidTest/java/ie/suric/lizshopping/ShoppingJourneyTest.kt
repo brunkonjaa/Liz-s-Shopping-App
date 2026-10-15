@@ -13,7 +13,12 @@ class ShoppingJourneyTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
 
     private fun waitForText(text: String) {
-        rule.waitUntil(10_000) { rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+        try {
+            rule.waitUntil(10_000) { rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+        } catch (error: ComposeTimeoutException) {
+            rule.onRoot(useUnmergedTree = true).printToLog("ShoppingJourneyTimeout")
+            throw error
+        }
     }
 
     private fun closeDrawerIfOpen() {
