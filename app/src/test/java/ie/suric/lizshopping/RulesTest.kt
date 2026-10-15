@@ -40,4 +40,34 @@ class RulesTest {
     @Test(expected = IllegalArgumentException::class) fun negativeQuantityRejected() { Rules.checked(eggs.copy(quantity = -1)) }
     @Test(expected = IllegalArgumentException::class) fun controlTextRejected() { Rules.checked(eggs.copy(name = "Eggs\nInjected")) }
     @Test(expected = IllegalArgumentException::class) fun overlongNameRejected() { Rules.checked(eggs.copy(name = "a".repeat(101))) }
+
+    @Test fun catalogueProductsHaveStableIds() {
+        assertEquals(Catalogue.find("Milk")!!.id, Catalogue.find("milk")!!.id)
+        assertTrue(Catalogue.find("Milk")!!.id.startsWith("product:"))
+    }
+
+    @Test fun sameProductCanBeUsedByIndependentShops() {
+        val product = Catalogue.find("Milk")!!
+        val item = Item(name = product.name, productId = product.id, size = "2 L")
+        val state = ShoppingState().copy(
+            stores = ShoppingState().stores +
+                ("Lidl" to ShopData(items = listOf(item), associatedProductIds = setOf(product.id))) +
+                ("Aldi" to ShopData(items = listOf(item.copy(id = "aldi")), associatedProductIds = setOf(product.id)))
+        )
+        assertEquals(1, state.dataFor("Lidl").items.size)
+        assertEquals(1, state.dataFor("Aldi").items.size)
+        assertNotEquals(state.dataFor("Lidl").items.single().id, state.dataFor("Aldi").items.single().id)
+    }
+
+    @Test fun customShopIsStableAndDeletionIsGuarded() {
+        val added = Rules.addShop(ShoppingState(), "Spar")
+        assertEquals("Spar", added.selected)
+        val spar = added.shop("Spar")
+        val renamed = Rules.renameShop(added, spar.id, "Local Spar")
+        assertEquals(spar.id, renamed.shop("Local Spar").id)
+        val withData = renamed.copy(stores = renamed.stores + (spar.id to ShopData(items = listOf(eggs))))
+        try { Rules.removeShop(withData, spar.id); fail("shop with data must not be removed") } catch (_: IllegalArgumentException) { }
+        val empty = Rules.removeShop(renamed, spar.id)
+        assertFalse(empty.shopNames().contains("Local Spar"))
+    }
 }

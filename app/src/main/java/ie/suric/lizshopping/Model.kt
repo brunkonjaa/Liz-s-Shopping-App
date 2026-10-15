@@ -3,14 +3,69 @@ package ie.suric.lizshopping
 import java.util.Locale
 import java.util.UUID
 
-val shops = listOf("Lidl", "Aldi", "Dunnes Stores", "SuperValu")
-data class Product(val name: String, val category: String, val symbol: String, val varieties: List<String>, val sizes: List<String>)
-data class Item(val id: String = UUID.randomUUID().toString(), val name: String, val variety: String = "", val size: String = "", val quantity: Int = 1, val done: Boolean = false) {
-    fun key() = listOf(name, variety, size).map { it.trim().lowercase(Locale.ROOT) }
+data class Shop(val id: String, val name: String, val builtIn: Boolean = false)
+
+object ShopDefaults {
+    val definitions = listOf(
+        Shop("Lidl", "Lidl", builtIn = true),
+        Shop("Aldi", "Aldi", builtIn = true),
+        Shop("Dunnes Stores", "Dunnes Stores", builtIn = true),
+        Shop("SuperValu", "SuperValu", builtIn = true)
+    )
+    val names = definitions.map { it.name }
+}
+
+val shops = ShopDefaults.names
+
+fun stableKey(value: String) = value.trim().lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]+"), "-").trim('-')
+fun stableProductId(name: String, category: String = "Other") = "product:${stableKey(name)}:${stableKey(category)}"
+fun stableLegacyProductId(name: String) = "legacy:${stableKey(name)}"
+
+data class Product(
+    val name: String,
+    val category: String,
+    val symbol: String,
+    val varieties: List<String>,
+    val sizes: List<String>,
+    val id: String = stableProductId(name, category),
+    val imageRef: String? = null,
+    val imageDataBase64: String? = null
+)
+
+data class Item(
+    val id: String = UUID.randomUUID().toString(),
+    val name: String,
+    val variety: String = "",
+    val size: String = "",
+    val quantity: Int = 1,
+    val done: Boolean = false,
+    val productId: String? = null,
+    val notes: String = ""
+) {
+    fun key() = listOf(productId ?: name, variety, size).map { it.trim().lowercase(Locale.ROOT) }
     fun detail() = listOf(variety, size).filter { it.isNotBlank() }.joinToString(" · ")
 }
-data class ShopData(val items: List<Item> = emptyList(), val favourites: List<Item> = emptyList(), val previous: List<Item> = emptyList())
-data class ShoppingState(val selected: String? = null, val stores: Map<String, ShopData> = shops.associateWith { ShopData() }, val custom: List<Product> = emptyList())
+
+data class ShopData(
+    val items: List<Item> = emptyList(),
+    val favourites: List<Item> = emptyList(),
+    val previous: List<Item> = emptyList(),
+    val associatedProductIds: Set<String> = emptySet()
+)
+
+data class ShoppingState(
+    val selected: String? = null,
+    val stores: Map<String, ShopData> = ShopDefaults.definitions.associate { it.id to ShopData() },
+    val custom: List<Product> = emptyList(),
+    val shopDefinitions: List<Shop> = ShopDefaults.definitions
+)
+
+fun ShoppingState.shop(name: String): Shop = shopDefinitions.firstOrNull { it.name == name || it.id == name }
+    ?: error("Unknown shop")
+fun ShoppingState.shopNames(): List<String> = shopDefinitions.map { it.name }
+fun ShoppingState.dataFor(name: String): ShopData = stores[shop(name).id] ?: ShopData()
+fun ShoppingState.allProducts(): List<Product> = (Catalogue.products + custom).distinctBy { it.id }
+fun ShoppingState.productFor(item: Item): Product? = allProducts().firstOrNull { it.id == item.productId }
 
 object Rules {
     fun text(value: String, required: Boolean = false): String {
@@ -21,6 +76,8 @@ object Rules {
     fun checked(item: Item) = item.copy(name = text(item.name, true), variety = text(item.variety), size = text(item.size)).also {
         require(it.quantity in 1..999) { "Quantity must be between 1 and 999." }
         require(it.id.length in 1..100)
+        require(it.productId == null || (it.productId.length in 1..150 && it.productId.none { c -> c.isISOControl() }))
+        text(it.notes)
     }
     fun add(items: List<Item>, input: Item): List<Item> {
         val clean = checked(input)
@@ -46,4 +103,32 @@ object Rules {
     }
     fun fresh(data: ShopData) = data.copy(previous = if (data.items.isEmpty()) data.previous else data.items.map { it.copy(done = false) }, items = emptyList())
     fun reuse(data: ShopData) = data.copy(items = data.previous.fold(data.items) { all, item -> add(all, item.copy(id = UUID.randomUUID().toString(), done = false)) })
+
+    fun validateShopName(name: String) = text(name, required = true).also { require(it.length >= 2) { "Shop name must contain at least 2 characters." } }
+
+    fun addShop(state: ShoppingState, name: String): ShoppingState {
+        val clean = validateShopName(name)
+        require(state.shopDefinitions.none { it.name.equals(clean, true) }) { "That shop already exists." }
+        val shop = Shop("shop:${UUID.randomUUID()}", clean)
+        return state.copy(shopDefinitions = state.shopDefinitions + shop, stores = state.stores + (shop.id to ShopData()), selected = clean)
+    }
+
+    fun renameShop(state: ShoppingState, id: String, name: String): ShoppingState {
+        val old = state.shopDefinitions.firstOrNull { it.id == id } ?: error("Unknown shop")
+        require(!old.builtIn) { "Built-in shops cannot be renamed." }
+        val clean = validateShopName(name)
+        require(state.shopDefinitions.none { it.id != id && it.name.equals(clean, true) }) { "That shop already exists." }
+        return state.copy(shopDefinitions = state.shopDefinitions.map { if (it.id == id) it.copy(name = clean) else it }, selected = if (state.selected == old.name) clean else state.selected)
+    }
+
+    fun removeShop(state: ShoppingState, id: String): ShoppingState {
+        val target = state.shopDefinitions.firstOrNull { it.id == id } ?: error("Unknown shop")
+        require(!target.builtIn) { "The four default shops cannot be removed." }
+        val data = state.stores[id] ?: ShopData()
+        require(data.items.isEmpty() && data.favourites.isEmpty() && data.previous.isEmpty()) { "Clear this shop's lists and favourites before removing it." }
+        val remaining = state.shopDefinitions.filterNot { it.id == id }
+        return state.copy(shopDefinitions = remaining, stores = state.stores - id, selected = if (state.selected == target.name) remaining.firstOrNull()?.name else state.selected)
+    }
+
+    fun withAssociation(data: ShopData, productId: String) = data.copy(associatedProductIds = data.associatedProductIds + productId)
 }

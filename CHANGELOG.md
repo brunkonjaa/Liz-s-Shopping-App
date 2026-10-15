@@ -1,9 +1,16 @@
 # Changelog
-## Validated fix — 2026-10-14
-- Keep confirmation snackbars out of the product editor and clear carried-over search focus/keyboard when opening it.
-- Wait for navigation controls in the Android journey instead of clicking before the editor has closed.
-- Retain actual PNG screenshots and semantics through Gradle additional test output rather than querying an already-uninstalled app.
-- GitHub Actions run 38496681250 passed unit tests, lint, manifest checks, APK assembly and the complete Android 13 journey on commit 6025f96. Physical-device and representative-user checks remain unverified.
 
-## 0.1.0 — 2026-10-13 (unverified source implementation)
-Initial native Compose application, grocery catalogue, four shop lists, custom products, independent favourites, SQLite persistence, validated local backups, list reuse, automated test sources and project documentation. APK build and runtime validation pending.
+## Task 2 architecture recovery — 2026-10-15
+
+- Added stable reusable product IDs, product references on shopping entries and stable shop definitions.
+- Added persisted custom-shop creation, rename support and conservative removal safeguards.
+- Added v2 JSON backup data with v1 import compatibility and explicit v1-to-v2 SQLite migration.
+- Added bounded offline custom-image import into app-private storage and safe image metadata validation.
+- Preserved the Task 3 warm Compose design and wired the existing drawer/home/editor to dynamic shops and catalogue references.
+- Added migration, identity, reuse, shop-safety, image-reference and failure-recovery tests.
+
+## Verification baseline — 2026-10-15
+
+- Unit tests, lint, debug APK assembly and the connected Android journey passed on Samsung SM-A127F / Android 13 after the final Task 2/3 integration edits.
+- The API 37 emulator remains unverified because its previously reported startup/high-CPU issue remains unresolved.
+- Task 1 repository audit and architecture review are complete; Task 4 shared bottom-sheet workflows, dated history, broad accessibility checks and release validation remain open.
