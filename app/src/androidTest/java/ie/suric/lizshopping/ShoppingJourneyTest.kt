@@ -1,11 +1,11 @@
 package ie.suric.lizshopping
 
-import android.graphics.Bitmap
+import android.util.Log
+import androidx.lifecycle.ViewModelProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import java.io.File
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -20,9 +20,11 @@ class ShoppingJourneyTest {
             rule.waitUntil(10_000) { rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
         } catch (error: ComposeTimeoutException) {
             rule.onRoot(useUnmergedTree = true).printToLog("ShoppingJourneyTimeout")
-            val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
-            val output = File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "shopping-journey-timeout.png")
-            output.outputStream().use { screenshot.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            val current = ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].state.value
+            val selected = current?.selected
+            val items = selected?.let { current.dataFor(it).items }.orEmpty()
+            Log.e("ShoppingJourneyTimeout", "expected=$text selected=$selected items=${items.map { it.name + " x" + it.quantity }} addCompleted=${items.any { it.name.equals("Bread", true) }}")
+            InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("screencap -p /sdcard/shopping-journey-timeout.png").close()
             throw error
         }
     }

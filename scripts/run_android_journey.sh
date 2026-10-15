@@ -12,7 +12,7 @@ mkdir -p "$evidence_dir"
 temp_screenshot="$evidence_dir/shopping-journey-timeout.png.tmp"
 final_screenshot="$evidence_dir/shopping-journey-timeout.png"
 rm -f "$temp_screenshot" "$final_screenshot"
-adb -s "${ANDROID_SERIAL:-emulator-5554}" exec-out run-as ie.suric.lizshopping cat files/shopping-journey-timeout.png > "$temp_screenshot" 2>/dev/null || true
+adb -s "${ANDROID_SERIAL:-emulator-5554}" pull /sdcard/shopping-journey-timeout.png "$temp_screenshot" >/dev/null 2>&1 || true
 if test -s "$temp_screenshot"; then
   mv "$temp_screenshot" "$final_screenshot"
 else
