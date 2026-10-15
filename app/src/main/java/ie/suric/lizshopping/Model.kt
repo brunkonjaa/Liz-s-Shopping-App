@@ -90,6 +90,31 @@ object Rules {
             if (it.id == match.id) it.copy(quantity = minOf(999, it.quantity + clean.quantity), done = false) else it
         }
     }
+
+    /**
+     * Builds the one-tap catalogue action from the shop's saved configuration,
+     * falling back to the first valid catalogue options when no saved choice
+     * exists. A product with no valid default remains configurable instead of
+     * receiving a guessed value.
+     */
+    fun defaultItem(product: Product, data: ShopData): Item? {
+        val saved = (data.favourites + data.items + data.previous).firstOrNull {
+            it.productId == product.id || it.name.equals(product.name, ignoreCase = true)
+        }
+        val variety = saved?.variety?.takeIf { it.isNotBlank() }
+            ?: product.varieties.firstOrNull { it.isNotBlank() }.orEmpty()
+        val size = saved?.size?.takeIf { it.isNotBlank() }
+            ?: product.sizes.firstOrNull { it.isNotBlank() }.orEmpty()
+        if (product.varieties.any { it.isNotBlank() } && variety.isBlank()) return null
+        if (product.sizes.any { it.isNotBlank() } && size.isBlank()) return null
+        return Item(
+            name = product.name,
+            variety = variety,
+            size = size,
+            quantity = saved?.quantity?.coerceIn(1, 999) ?: 1,
+            productId = product.id
+        )
+    }
     fun edit(items: List<Item>, input: Item): List<Item> {
         val clean = checked(input)
         val rest = items.filterNot { it.id == clean.id }

@@ -32,13 +32,24 @@ class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun update(note: String? = null, change: (ShoppingState) -> ShoppingState) {
         viewModelScope.launch { mutex.withLock {
+            var currentForRollback: ShoppingState? = null
             try {
                 val current = mutable.value ?: return@withLock
+                currentForRollback = current
                 val next = change(current)
-                withContext(Dispatchers.IO) { store.save(next) }
+                // Publish the small state change before the snapshot write so
+                // quantity and completion controls feel immediate. The mutex
+                // still serializes writes, and a failed write rolls back the
+                // in-memory value to the last known durable state.
                 mutable.value = next
                 if (note != null) message.value = note
-            } catch (e: Exception) { message.value = e.message ?: "Change could not be saved." }
+                withContext(Dispatchers.IO) { store.save(next) }
+            } catch (e: Exception) {
+                // The change is serialized by mutex, so this is the state
+                // immediately preceding the failed durable write.
+                currentForRollback?.let { mutable.value = it }
+                message.value = e.message ?: "Change could not be saved."
+            }
         } }
     }
 
@@ -60,6 +71,18 @@ class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
         val current = mutable.value ?: ShoppingState()
         val clean = canonical(current, item)
         data.copy(items = Rules.add(data.items, clean), associatedProductIds = data.associatedProductIds + listOfNotNull(clean.productId))
+    }
+
+    fun addProduct(shop: String, product: Product) = update("${product.name} added to $shop") { state ->
+        val definition = state.shop(shop)
+        val data = state.stores[definition.id] ?: ShopData()
+        val item = requireNotNull(Rules.defaultItem(product, data)) { "Choose the product details before adding it." }
+        state.copy(
+            stores = state.stores + (definition.id to data.copy(
+                items = Rules.add(data.items, item),
+                associatedProductIds = data.associatedProductIds + product.id
+            ))
+        )
     }
 
     fun edit(shop: String, item: Item) = shop(shop, "Item updated") { data ->

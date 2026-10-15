@@ -65,6 +65,34 @@ class RulesTest {
         assertNotEquals(state.dataFor("Lidl").items.single().id, state.dataFor("Aldi").items.single().id)
     }
 
+    @Test fun catalogueDefaultReusesSavedConfigurationAndQuantity() {
+        val product = Catalogue.find("Milk")!!
+        val savedSize = product.sizes.last { it.isNotBlank() }
+        val saved = Item(name = product.name, productId = product.id, variety = product.varieties.first(), size = savedSize, quantity = 3)
+        val item = Rules.defaultItem(product, ShopData(favourites = listOf(saved)))
+        assertEquals(savedSize, item!!.size)
+        assertEquals(3, item.quantity)
+        assertEquals(product.id, item.productId)
+    }
+
+    @Test fun oneTapCatalogueAddMergesInsteadOfDuplicating() {
+        val product = Catalogue.find("Milk")!!
+        val data = ShopData(items = listOf(Item(name = product.name, productId = product.id, variety = product.varieties.first(), size = product.sizes.first(), quantity = 2)))
+        val item = Rules.defaultItem(product, data)!!
+        val result = Rules.add(data.items, item)
+        assertEquals(1, result.size)
+        assertEquals(4, result.single().quantity)
+    }
+
+    @Test fun rapidQuantityChangesRemainBoundedAndSequential() {
+        var item = Item(name = "Milk", quantity = 1)
+        repeat(25) { item = Rules.changeQuantity(item, 1) }
+        repeat(10) { item = Rules.changeQuantity(item, -1) }
+        assertEquals(16, item.quantity)
+        repeat(1_000) { item = Rules.changeQuantity(item, 1) }
+        assertEquals(999, item.quantity)
+    }
+
     @Test fun customShopIsStableAndDeletionIsGuarded() {
         val added = Rules.addShop(ShoppingState(), "Spar")
         assertEquals("Spar", added.selected)

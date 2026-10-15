@@ -7,6 +7,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +37,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,7 +54,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -110,16 +112,27 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
     val message by vm.message.collectAsStateWithLifecycle()
     val restoreReady by vm.restoreReady.collectAsStateWithLifecycle()
     val loadFailed by vm.loadFailed.collectAsStateWithLifecycle()
-    var choosing by rememberSaveable { mutableStateOf(true) }
+    // A fresh activity starts in the persisted shop list when one exists.
+    // First-time users still land on Home because no shop is selected yet.
+    var choosing by remember { mutableStateOf(false) }
     var settings by rememberSaveable { mutableStateOf(false) }
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    // The current shopping list is the launch task for returning users. Tab
+    // changes remain instant within the activity but do not override that
+    // first screen after a process restart.
+    var tab by remember { mutableIntStateOf(2) }
     var query by rememberSaveable { mutableStateOf("") }
     var category by rememberSaveable { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf<Editing?>(null) }
     var sheet by remember { mutableStateOf<ActiveSheet?>(null) }
     var selectedImage by remember { mutableStateOf<ImportedImage?>(null) }
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    // Drawer visibility is transient UI state; do not restore an open drawer
+    // over the user's shopping list after a process restart.
+    val drawerState = remember { DrawerState(DrawerValue.Closed) }
+    var drawerUserOpened by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    LaunchedEffect(drawerState.isOpen, drawerUserOpened) {
+        if (!drawerUserOpened && drawerState.isOpen) drawerState.close()
+    }
     val context = LocalContext.current
     val snack = remember { SnackbarHostState() }
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
@@ -157,7 +170,7 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
             topBar = {
                 AppTopBarV2(
                     title = when { settings -> "Settings"; choosing -> "Liz's Shopping List"; editing != null -> editing?.item?.name.orEmpty(); else -> shop.orEmpty() },
-                    onMenu = { scope.launch { drawerState.open() } },
+                    onMenu = { drawerUserOpened = true; scope.launch { drawerState.open() } },
                     onBack = if (settings || editing != null) ({ if (editing != null) editing = null else settings = false }) else null,
                     onOptions = if (!choosing && !settings && editing == null && sheet == null) ({ sheet = ActiveSheet.Options }) else null,
                     onSettings = if (choosing) ({ settings = true; choosing = false }) else null
@@ -172,33 +185,43 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
                 }
             }
         ) { padding ->
-            if (s == null) {
+            val route = when {
+                s == null -> "loading"
+                settings -> "settings"
+                choosing || shop == null -> "home"
+                editing != null -> "editor"
+                else -> "shop:${shop}:$tab"
+            }
+            Crossfade(targetState = route, animationSpec = tween(160), label = "Screen transition") { targetRoute ->
+            if (targetRoute == "loading" || s == null) {
                 Column(Modifier.padding(padding).padding(24.dp)) { if (loadFailed) Text("Saved data could not be loaded. Open options to restore a backup, or restart the app.") else { CircularProgressIndicator(); Text("Loading saved shopping lists…") } }
-            } else if (settings) {
+            } else if (targetRoute == "settings") {
                 SettingsPageV2(Modifier.padding(padding), s, themeMode, onThemeChange, { sheet = ActiveSheet.AddShop }, { name -> sheet = ActiveSheet.RenameShop(s.shop(name)) }, { name -> sheet = ActiveSheet.RemoveShop(s.shop(name)) })
-            } else if (choosing || shop == null) {
+            } else if (targetRoute == "home") {
                 val homeShop = s.selected ?: s.shopNames().first()
                 HomePageV2(Modifier.padding(padding), s, { selected -> vm.select(selected); choosing = false; tab = 0; query = ""; category = null }, { vm.select(homeShop); choosing = false; tab = 1 }, { vm.select(homeShop); choosing = false; tab = 2 }, { vm.select(homeShop); choosing = false; tab = 0 })
             } else {
-                val data = s.dataFor(shop)
+                val activeShop = requireNotNull(shop)
+                val data = s.dataFor(activeShop)
                 val edit = editing
-        if (edit != null) {
+        if (targetRoute == "editor" && edit != null) {
                     LizBottomSheet(if (edit.mode == "custom") "Add new product" else "Edit ${edit.item.name}", "Configure this product without leaving your shopping list.", { selectedImage = null; editing = null }) {
                     ProductEditor(Modifier.fillMaxWidth(), edit, s.allProducts(), data.favourites.any { it.key() == edit.item.key() }, selectedImage, { imagePicker.launch(arrayOf("image/png", "image/jpeg", "image/webp")) }, { selectedImage = null; editing = null }) { item, productCategory, heart, image ->
-                        when (edit.mode) { "list" -> vm.edit(shop, item); "favourite" -> vm.editFavourite(shop, edit.item, item); "custom" -> vm.custom(item, shop, productCategory, heart, image); else -> vm.add(shop, item) }
+                        when (edit.mode) { "list" -> vm.edit(activeShop, item); "favourite" -> vm.editFavourite(activeShop, edit.item, item); "custom" -> vm.custom(item, activeShop, productCategory, heart, image); else -> vm.add(activeShop, item) }
                         if (image != null && edit.mode != "custom") vm.importProductImage(edit.item.productId ?: edit.product?.id.orEmpty(), image)
-                        if (edit.mode != "custom" && edit.mode != "favourite") { val wasFavourite = data.favourites.any { it.key() == edit.item.key() }; if (heart && !wasFavourite) vm.favourite(shop, item) else if (!heart && wasFavourite) vm.removeFavourite(shop, edit.item) }
+                        if (edit.mode != "custom" && edit.mode != "favourite") { val wasFavourite = data.favourites.any { it.key() == edit.item.key() }; if (heart && !wasFavourite) vm.favourite(activeShop, item) else if (!heart && wasFavourite) vm.removeFavourite(activeShop, edit.item) }
                         selectedImage = null
                         editing = null
                     }
                     }
                 } else {
                     when (tab) {
-                        0 -> AllItemsPage(Modifier.padding(padding), shop, s, query, category, { query = it.take(100) }, { category = it }, { product -> editing = Editing(Item(name = product.name, variety = product.varieties.firstOrNull().orEmpty(), size = product.sizes.firstOrNull().orEmpty(), productId = product.id), product, "add") }, { editing = Editing(Item(name = ""), null, "custom") }, { product -> toggleFavourite(vm, shop, data, product) })
-                        1 -> FavouritesPage(Modifier.padding(padding), shop, data, query, { query = it.take(100) }, { item -> editing = Editing(item, s.productFor(item) ?: s.allProducts().firstOrNull { p -> p.name.equals(item.name, true) }, "favourite") }, { item -> vm.removeFavourite(shop, item) }, { item -> vm.add(shop, item.copy(id = UUID.randomUUID().toString(), productId = item.productId)) })
-                        else -> ShoppingListPage(Modifier.padding(padding), shop, data, { item -> vm.complete(shop, item.id) }, { item -> vm.quantity(shop, item.id, -1) }, { item -> vm.quantity(shop, item.id, 1) }, { item -> editing = Editing(item, s.productFor(item) ?: s.allProducts().firstOrNull { p -> p.name.equals(item.name, true) }, "list") }, { item -> vm.remove(shop, item.id) }, { tab = 0; query = "" })
+                         0 -> AllItemsPage(Modifier.padding(padding), activeShop, s, query, category, { query = it.take(100) }, { category = it }, { product -> editing = Editing(Item(name = product.name, variety = product.varieties.firstOrNull().orEmpty(), size = product.sizes.firstOrNull().orEmpty(), productId = product.id), product, "add") }, { product -> vm.addProduct(activeShop, product) }, { editing = Editing(Item(name = ""), null, "custom") }, { product -> toggleFavourite(vm, activeShop, data, product) })
+                         1 -> FavouritesPage(Modifier.padding(padding), activeShop, data, query, { query = it.take(100) }, { item -> editing = Editing(item, s.productFor(item) ?: s.allProducts().firstOrNull { p -> p.name.equals(item.name, true) }, "favourite") }, { item -> vm.removeFavourite(activeShop, item) }, { item -> vm.add(activeShop, item.copy(id = UUID.randomUUID().toString(), productId = item.productId)) })
+                         else -> ShoppingListPage(Modifier.padding(padding), activeShop, data, { item -> vm.complete(activeShop, item.id) }, { item -> vm.quantity(activeShop, item.id, -1) }, { item -> vm.quantity(activeShop, item.id, 1) }, { item -> editing = Editing(item, s.productFor(item) ?: s.allProducts().firstOrNull { p -> p.name.equals(item.name, true) }, "list") }, { item -> vm.remove(activeShop, item.id) }, { tab = 0; query = "" })
                     }
                 }
+            }
             }
         }
     }
@@ -295,7 +318,7 @@ private fun HomePage(modifier: Modifier, state: ShoppingState, onShop: (String) 
 }
 
 @Composable
-private fun AllItemsPage(modifier: Modifier, shop: String, state: ShoppingState, query: String, category: String?, onQuery: (String) -> Unit, onCategory: (String?) -> Unit, onProduct: (Product) -> Unit, onCustom: () -> Unit, onFavourite: (Product) -> Unit) {
+private fun AllItemsPage(modifier: Modifier, shop: String, state: ShoppingState, query: String, category: String?, onQuery: (String) -> Unit, onCategory: (String?) -> Unit, onConfigure: (Product) -> Unit, onAdd: (Product) -> Unit, onCustom: () -> Unit, onFavourite: (Product) -> Unit) {
     val products = state.allProducts().filter { (category == null || it.category == category) && it.name.contains(query.trim(), true) }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { EditorialBanner("ALL ITEMS", "Browse products at $shop", "🥕", accent = MaterialTheme.colorScheme.primary) }
@@ -304,7 +327,14 @@ private fun AllItemsPage(modifier: Modifier, shop: String, state: ShoppingState,
         item { Button(onClick = onCustom, modifier = Modifier.fillMaxWidth()) { Text("+ Add custom item") } }
         items(products, key = { it.id }) { product ->
             val favourite = state.dataFor(shop).favourites.any { it.productId == product.id || it.name.equals(product.name, true) }
-            ProductCard(product, { onProduct(product) }, favourite, { onFavourite(product) })
+            ProductCardV2(
+                product = product,
+                onConfigure = { onConfigure(product) },
+                onAdd = { onAdd(product) },
+                canAdd = Rules.defaultItem(product, state.dataFor(shop)) != null,
+                favourite = favourite,
+                onFavourite = { onFavourite(product) }
+            )
         }
         if (products.isEmpty()) item { EmptyState("No matching products", "Try another search or create a custom item.", "+ Add custom item", onCustom) }
     }

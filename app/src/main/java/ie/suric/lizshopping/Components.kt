@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -136,6 +137,36 @@ fun ShopCard(name: String, data: ShopData, selected: Boolean, onClick: () -> Uni
 }
 
 @Composable
+fun ProductCardV2(
+    product: Product,
+    onConfigure: () -> Unit,
+    onAdd: () -> Unit,
+    canAdd: Boolean = true,
+    favourite: Boolean = false,
+    onFavourite: (() -> Unit)? = null
+) {
+    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            ProductThumbnail(product.symbol)
+            Column(Modifier.weight(1f).padding(horizontal = 14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(product.name, style = MaterialTheme.typography.titleMedium)
+                Text(product.category, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(product.sizes.firstOrNull { it.isNotBlank() }.orEmpty(), color = MaterialTheme.colorScheme.secondary)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Button(onClick = onAdd, enabled = canAdd, modifier = Modifier.semantics { contentDescription = "Add ${product.name} to shopping list" }) { Text("+ Add") }
+                    TextButton(onClick = onConfigure, modifier = Modifier.heightIn(min = 48.dp)) { Text("Configure") }
+                }
+            }
+            onFavourite?.let { onHeart ->
+                IconButton(onClick = onHeart, modifier = Modifier.semantics { contentDescription = if (favourite) "Remove ${product.name} from favourites" else "Save ${product.name} as favourite" }) {
+                    Text(if (favourite) "♥" else "♡", fontSize = 26.sp, color = MaterialTheme.colorScheme.secondary)
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun ProductCard(product: Product, onClick: () -> Unit, favourite: Boolean = false, onFavourite: (() -> Unit)? = null) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) { ProductThumbnail(product.symbol); Column(Modifier.weight(1f).padding(horizontal = 14.dp)) { Text(product.name, style = MaterialTheme.typography.titleMedium); Text(product.category, color = MaterialTheme.colorScheme.onSurfaceVariant); Text(product.sizes.firstOrNull().orEmpty(), color = MaterialTheme.colorScheme.secondary) }; onFavourite?.let { onHeart -> IconButton(onClick = onHeart, modifier = Modifier.semantics { contentDescription = if (favourite) "Remove ${product.name} from favourites" else "Save ${product.name} as favourite" }) { Text(if (favourite) "♥" else "♡", fontSize = 26.sp, color = MaterialTheme.colorScheme.secondary) } }; Text("+", fontSize = 30.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.semantics { contentDescription = "Add ${product.name}" }) }
@@ -145,7 +176,7 @@ fun ProductCard(product: Product, onClick: () -> Unit, favourite: Boolean = fals
 @Composable
 fun FavouriteCard(item: Item, onAdd: () -> Unit, onEdit: () -> Unit, onRemove: () -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) { ProductThumbnail(Catalogue.symbol(item.name), Modifier.size(62.dp)); Column(Modifier.weight(1f).padding(horizontal = 12.dp)) { Text(item.name, style = MaterialTheme.typography.titleMedium); Text("${item.detail()} · ×${item.quantity}", color = MaterialTheme.colorScheme.onSurfaceVariant) }; Column(horizontalAlignment = Alignment.End) { TextButton(onClick = onAdd) { Text("+ Add") }; Row { TextButton(onClick = onEdit) { Text("Edit") }; IconButton(onClick = onRemove, modifier = Modifier.semantics { contentDescription = "Remove ${item.name} from favourites" }) { Text("♡", fontSize = 24.sp) } } }
+        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) { ProductThumbnail(Catalogue.symbol(item.name), Modifier.size(62.dp)); Column(Modifier.weight(1f).padding(horizontal = 12.dp)) { Text(item.name, style = MaterialTheme.typography.titleMedium); Text("${item.detail()} · ×${item.quantity}", color = MaterialTheme.colorScheme.onSurfaceVariant) }; Column(horizontalAlignment = Alignment.End) { TextButton(onClick = onAdd, modifier = Modifier.semantics { contentDescription = "Add ${item.name} to shopping list" }) { Text("+ Add") }; Row { TextButton(onClick = onEdit) { Text("Edit") }; IconButton(onClick = onRemove, modifier = Modifier.semantics { contentDescription = "Remove ${item.name} from favourites" }) { Text("♡", fontSize = 24.sp) } } }
         }
     }
 }

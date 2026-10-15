@@ -28,3 +28,10 @@
 - Recorded a non-destructive Samsung Android 13 manual flow covering product configuration, favourites, list completion, force-stop/restart persistence, shop isolation and light/dark theme inspection.
 - Classified backup/restore UI, TalkBack, device reboot/update persistence, the full visual matrix, several management/reuse journeys and API 37 as **NOT VERIFIED** rather than passing them by inference.
 - Release assessment is **CONDITIONALLY READY** with no confirmed P0/P1 defects in the tested scope. See `docs/TASK5_ACCEPTANCE_REPORT.md`.
+
+## Task 7 interaction responsiveness - 2026-10-15
+
+- Added direct catalogue and favourite Add actions with product-specific semantics, while retaining Configure as a separate action.
+- Added optimistic quantity updates with serialized persistence and rollback on write failure.
+- Added saved-list launch routing, transient drawer handling and a target-aware 160ms route crossfade.
+- Fresh unit, lint, APK assembly and Samsung connected-journey evidence are recorded in `docs/TASK7_INTERACTION_AND_PERFORMANCE_REPORT.md`.

@@ -17,6 +17,7 @@ class StorageTest {
     private val item = Item(name = "Eggs", variety = "Free Range", size = "12 pack", quantity = 2, done = true)
     private fun sample() = ShoppingState(selected = "Lidl", stores = ShoppingState().stores + ("Lidl" to ShopData(items = listOf(item), favourites = listOf(item.copy(done = false)))), custom = listOf(Product("Special soap", "Other", "🛍", listOf(""), listOf(""))))
     @Test fun backupRoundTripKeepsEverything() { assertEquals(sample(), Backup.decode(Backup.encode(sample()))) }
+    @Test fun selectedShopRoundTripKeepsCurrentShop() { assertEquals("Aldi", Backup.decode(Backup.encode(ShoppingState(selected = "Aldi"))).selected) }
     @Test fun shopsAreIndependent() { val s = Backup.decode(Backup.encode(sample())); assertTrue(s.stores.getValue("Aldi").items.isEmpty()); assertTrue(s.stores.getValue("Aldi").favourites.isEmpty()) }
     @Test fun sqliteSurvivesConnectionRestart() {
         val app = RuntimeEnvironment.getApplication()

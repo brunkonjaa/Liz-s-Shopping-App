@@ -33,3 +33,12 @@ The API 37 emulator remains unverified. Its previous startup/high-CPU issue rema
 ## Coverage limits
 
 The connected journey does not cover custom-shop creation, product image selection, v1 database upgrade on a physical target, backup/restore UI error paths, large font sizes, TalkBack, landscape or representative-user behaviour. The new sheet workflows still require a fresh connected-device run and are not claimed verified from compilation alone.
+
+## Task 7 interaction and performance evidence - 2026-10-15
+
+- Fresh `testDebugUnitTest --no-build-cache` passed: 41 tests, 0 failures.
+- Fresh `lintDebug --no-build-cache` and `assembleDebug --no-build-cache` passed.
+- Fresh `connectedDebugAndroidTest --no-build-cache` passed on Samsung SM-A127F / Android 13: 1 test, 0 failures.
+- The journey covers direct catalogue Add, repeated quantity changes, completion, favourite reuse, Lidl/Aldi isolation and activity recreation persistence.
+- Three cold Liz starts after the Task 7 build measured 1,936 ms, 1,863 ms and 1,843 ms. The eight-frame startup-only gfxinfo sample reported 8 janky frames; it is not a steady-state frame-pacing benchmark.
+- See `docs/TASK7_INTERACTION_AND_PERFORMANCE_REPORT.md` for the tracker comparison, before/after interaction table and explicit smoothness limitations.
