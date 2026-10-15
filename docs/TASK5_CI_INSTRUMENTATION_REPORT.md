@@ -8,7 +8,7 @@ Date: 2026-10-16, Europe/Dublin. This report concerns the CI failure brief, sepa
 - Starting tree already contained changes to README, TESTING, CHANGELOG, Task 3/4 documents and the journey test, plus local captures. These were not used as the diagnostic baseline or overwritten.
 - Isolated worktree: `verification/task5-ci-diagnostics`, branch `fix/task5-ci-diagnostics`, based on the exact starting commit. Production source is unchanged.
 - Modified scope: `ShoppingJourneyTest.kt`, new `JourneyDiagnostics.kt` (androidTest only), `scripts/run_android_journey.sh`, `.github/workflows/android.yml`, the seven project documents, and this report. Local snapshots/logs remain ignored and are not included in publishing.
-- Final commit and clean-tree verification: pending completion of diagnostic validation.
+- First published diagnostic commit: `bb57f5ae8409661a2891da6a71a252772e99b12c`; [draft PR #3](https://github.com/brunkonjaa/Liz-s-Shopping-App/pull/3) targets `fix/ci-journey-state`. Main and the original checkout remain unchanged. Final commit/tree verification follows CI investigation.
 
 ## B. Root-cause investigation
 
@@ -26,19 +26,27 @@ The passing diagnostic phone run recorded exactly one enabled, displayed Add wit
 
 An initial diagnostic run failed before Add because Android had not initialized its app-owned external output directory; this diagnostic defect was corrected with the platform directory API and non-masking setup/teardown. Runtime artifact inspection also found that collection-level semantics output defaulted to roots only; the helper now prints each root interaction with descendants.
 
-### Evidence boundary and hypotheses
+### Confirmed failure mechanism
 
-- Scrolling: an existing local scroll/enable-check edit passes on the phone, as does the committed test. This comparison alone does not establish causation.
-- Keyboard/viewport: old CI logcat shows IME activity and a 1080x1920 Compose view. Actual keyboard visibility, clipped Add bounds and scroll position at the failed click were absent. These now have dedicated captures.
-- Synchronization: the original 30-second ViewModel wait is preserved. A returned `performClick` only establishes completion of injection; it does not prove the Add callback ran.
-- State/rendering/persistence: capture transient ViewModel/message events separately from the visible semantics/hierarchy and committed SQLite row. Optimistic state is not durable proof. Absence of an event can reflect StateFlow conflation; absence of a SQLite exception does not prove success because production catches write errors.
-- No failure category or production cause is confirmed from the original artifacts. No production, schema, permissions, navigation or animation change is justified at this stage.
+[Diagnostic CI run 38823320223](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38823320223) reproduced the same first-add timeout and successfully uploaded [artifact 12014083518](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38823320223/artifacts/12014083518). The downloaded ZIP was inspected, including the actual PNG, accessibility XML, merged/unmerged semantics, state reports and runner/logcat evidence.
+
+- Environment: API 33, x86_64, Pixel 2 profile, 1080x1920, 420 dpi (2.625 density), animations 0. Phone: 720x1600 at overridden 280 dpi (1.75 density). These have similar dp widths but different available dp heights.
+- Immediately before Add, exactly one matching enabled button has an OnClick action. Its layout is `(310,1654)-(528,1759)`; its scroll ancestor viewport ends at `y=1584`. Therefore the entire button is outside the visible catalogue viewport.
+- The node exists in semantics but `displayed=false`; its clipped `boundsInRoot` and `boundsInWindow` are both zero rectangles, with center `(0,0)`. Scroll range is nonzero and still at the start.
+- `performClick` returns, but no Bread publication/message is observed. ViewModel and committed SQLite remain empty immediately afterward and at the 30-second failure. The screenshot independently confirms only the upper part of the Bread card is visible above the navigation bar.
+- The keyboard is hidden; activity is RESUMED with window focus before/after/failure. No selector ambiguity exists. Waiting longer does not bring the button into view.
+
+**Supported category: interaction did not reach the intended off-screen control.** The test assumed that a composed enabled node could receive a screen tap without scrolling. This is a test viewport assumption. It does not demonstrate a navigation, animation, ViewModel or SQLite defect. Missing events alone do not prove no persistence attempt; that is not needed to establish that the target is entirely clipped and the original tap cannot hit it.
+
+The minimum correction is `performScrollTo().assertIsDisplayed().assertIsEnabled()` before the existing catalogue Add click, with a new ready-state capture proving the target has usable bounds. Keep selectors, application APK, assertions, timeouts, keyboard handling and emulator settings unchanged. Corrected CI and repeated-run validation remain pending.
+
+API contract reference: [Compose test interaction API](https://developer.android.com/reference/kotlin/androidx/compose/ui/test/SemanticsNodeInteraction) documents scrolling and displayed checks; the diagnosis above comes from this run's artifacts.
 
 ## C. Changes and justification
 
-- At the original Add control: retain the exact selector and click, while recording unique match count, node ID, enabled/click action, clipped root/window bounds and centers, displayed state and ancestor vertical scroll range. Capture activity/lifecycle, window focus, IME and viewport without changing them.
+- At the catalogue Add control: retain the exact selector and click, add the evidenced scroll/displayed/enabled precondition, while recording unique match count, node ID, enabled/click action, clipped root/window bounds and centers, displayed state and ancestor vertical scroll range. Capture activity/lifecycle, window focus, IME and viewport without changing them.
 - Around the interaction: record started/returned/thrown dispatch separately from ViewModel/message events and committed Bread state. Optional method tracing (`journeyMethodTrace=true`) records exact save/transaction entry and exit if further evidence is necessary; it is a separate experiment because tracing changes timing.
-- At the actual quantity timeout: preserve PNG, accessibility XML, merged/unmerged semantics, target bounds, state/readback report, app-PID logcat and the original exception stack. Independent capture failures are logged without replacing the test exception. Assertions, test timeouts and application behaviour remain unchanged.
+- At the actual quantity timeout: preserve PNG, accessibility XML, merged/unmerged semantics, target bounds, state/readback report, app-PID logcat and the original exception stack. Independent capture failures are logged without replacing the test exception. Original outcome assertions, test timeouts and application behaviour remain unchanged; the corrected interaction adds stronger visibility/enabled assertions.
 - CI script: collect selected logcat tags while the emulator is alive, record configuration/IME/activity details, tee Gradle output, preserve its exit status, and collect remaining evidence in an EXIT trap. This avoids attempting to collect all evidence after the emulator action has stopped the emulator or Gradle has uninstalled the app.
 - Workflow: retain the existing always-upload step, XML, Android test reports and Gradle additional output, and include the new host diagnostic directory. Build/security checks and emulator configuration remain unchanged. No dependencies added.
 - Seven project documents describe the diagnostic boundary, privacy constraints and outstanding CI acceptance criteria.
@@ -54,17 +62,20 @@ An initial diagnostic run failed before Add because Android had not initialized 
 | Diagnostic unit tests, lint, APK/test APK build without cache | Passed: all 83 tasks executed, 50 unit tests, 0 failures/errors; lint 0 errors (13 warnings); build 3m 41s |
 | Diagnostic phone runs and timeout-artifact probe | First diagnostic runtime exposed an output-directory initialization defect; corrected. Subsequent journeys passed in 35.716s and 37.386s. Final semantics dumps contain descendants (53-56 KiB). Final ViewModel and committed SQLite both contain Bread 7 and favourite default 1 after recreation. Controlled quantity-999 timeout probe passed: the expected 30-second failure retained valid PNG/XML, full semantics, state/window/button reports, app logs and the original stack, with no capture errors. Normal source/assertions restored and test APK rebuilt |
 | CI collection shell syntax and exit-status harness | Passed: failure 7 and success 0 retained runner stderr/stdout, logs/configuration and exact exit status |
-| Diagnostic GitHub workflow and actual failure artifacts | Pending publishing and execution |
+| Diagnostic GitHub workflow and actual failure artifacts | Failed at original first Add as expected; full failure artifacts downloaded and inspected; build/security and always-upload passed |
+| Corrected unit/lint/APK/test APK command | Passed in 56s; production unchanged |
+| Corrected phone and GitHub journey | Pending |
+| Diagnostic Samsung through Gradle | Passed: 1 test, 0 failures/errors, 44.714s XML; Gradle pulled 43 diagnostic files before uninstalling. Reinstalled and restored every original DB/preferences file byte-for-byte, then launched |
 | Local matching Android 13 emulator | Not available: only API 37 images installed |
 
-Local APK SHA-256 before diagnostic changes: `3962A6F75694F648FE25EAFAB05C41B14E62B948F39ACBEF6D74302379AD8633`. The phone was snapshotted before testing; the original database had no saved state row. Each disposable run is restored from those original bytes, without `pm clear` or uninstalling the target app. Original database/preferences must be restored at completion and verified.
+Local APK SHA-256 before diagnostic changes: `3962A6F75694F648FE25EAFAB05C41B14E62B948F39ACBEF6D74302379AD8633`. The phone was snapshotted before testing; the original database had no saved state row. Each disposable run is restored from those original bytes, without `pm clear` or uninstalling the target app. The first restore-only check matched every original database/preferences file byte-for-byte and launched the app. Subsequent controlled tests require the same final restoration.
 
 ## E. Remaining risks
 
-The exact first-add failure mechanism remains unknown pending diagnostic CI execution. The phone has a different viewport, density, animations, keyboard, ABI and graphics/runtime environment. Method tracing and diagnostic collection can change scheduling, so any passing diagnostic run needs comparison and repetition. A controlled timeout probe verifies artifact generation but cannot establish the cause of the genuine CI failure.
+The viewport failure mechanism is established; corrected CI and repeated-run validation remain outstanding. The initial optional trace overflowed during pre-click capture and is not evidence of an absent save. Narrowing it to injection/state wait yielded a 3.9 MiB non-overflowing trace in a passing 42.777s journey: addProduct entry/return and LocalStore.save entry were recorded. The trace stopped at optimistic publication before save returned; subsequent committed readback confirmed Bread 1. Method entry alone is not a successful-write claim. The phone has a different viewport, density, animations, keyboard, ABI and graphics/runtime environment. Method tracing and diagnostic collection can change scheduling, so any passing diagnostic run needs comparison and repetition. A controlled timeout probe verifies artifact generation but cannot establish the cause of the genuine CI failure.
 
 The journey covers quantities, completion, favourites, shop isolation and activity recreation; it does not establish reboot persistence, accessibility coverage or broad release readiness. No corrected-test or reliable-CI claim can be made yet.
 
 ## F. Verdict
 
-**PARTIALLY RESOLVED**: the unchanged CI failure was reproduced and targeted diagnostics implemented. Root cause, correction and CI verification remain outstanding. A local pass alone does not resolve this task.
+**PARTIALLY RESOLVED**: the CI artifacts establish the off-screen-control mechanism and a test-only scroll correction is implemented. Corrected CI/repeated-run verification remains outstanding. A local pass alone does not resolve this task.

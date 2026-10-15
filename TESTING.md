@@ -2,7 +2,7 @@
 
 ## Task 5 CI instrumentation investigation - 2026-10-16
 
-The starting commit is 5d331b85ac8133d113d06ec643d194c59abf543f. An unchanged Samsung Android 13 run passed; GitHub run 38818122991 failed again at waitForBreadQuantity(1). Diagnostic results and the current verdict are in [the CI report](docs/TASK5_CI_INSTRUMENTATION_REPORT.md).
+The starting commit is 5d331b85ac8133d113d06ec643d194c59abf543f. An unchanged Samsung Android 13 run passed; GitHub run 38818122991 failed again at waitForBreadQuantity(1). Diagnostic run 38823320223 establishes that the enabled Add exists but is fully clipped below the viewport; it has zero clipped bounds and displayed=false. The correction scrolls to Add and asserts displayed/enabled, with before/ready captures. Diagnostic results and the current verdict are in [the CI report](docs/TASK5_CI_INSTRUMENTATION_REPORT.md).
 
 Journey diagnostics are written under additionalTestOutputDir/journey-diagnostics, which Gradle pulls before uninstalling. CI also retains app/build/reports/journey-diagnostics (runner output, filtered logcat, environment and exit status). Artifact upload uses always(). Both merged and unmerged semantics, accessibility XML, screenshots, bounds, IME, ViewModel events, committed Bread state and original failure stacks are retained. Capture errors are recorded separately.
 

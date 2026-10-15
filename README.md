@@ -2,7 +2,7 @@
 
 ## Task 5 CI investigation - 2026-10-16
 
-The unchanged Android 13 emulator journey failed again on GitHub while the unchanged Samsung journey passed. Test-only diagnostics now capture the first Bread Add and quantity timeouts; no production correction is justified yet. See [the CI investigation report](docs/TASK5_CI_INSTRUMENTATION_REPORT.md). Earlier phone/build passes do not establish CI reliability.
+The unchanged Android 13 emulator journey failed again on GitHub while the unchanged Samsung journey passed. CI artifacts establish that Add is fully clipped below the shorter emulator viewport. The test now scrolls to Add and asserts displayed/enabled before clicking; production is unchanged. Corrected CI validation is pending. See [the CI investigation report](docs/TASK5_CI_INSTRUMENTATION_REPORT.md). Earlier phone/build passes do not establish CI reliability.
 
 Native Kotlin and Jetpack Compose grocery-list app for Lidl, Aldi, Dunnes Stores and SuperValu. It is offline-first and uses private SQLite snapshot storage; it has no accounts, network services, adverts, trackers or pricing.
 

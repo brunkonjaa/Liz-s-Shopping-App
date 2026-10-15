@@ -4,7 +4,7 @@
 
 - Reproduced the unchanged GitHub Android 13 first-add quantity timeout and a passing unchanged Samsung journey.
 - Added test-only first-add/timeout diagnostics and failure-safe CI runner, logcat and emulator configuration retention.
-- Kept original interactions and timeouts while investigating; no speculative production fix.
+- Preserved original interaction for diagnostic reproduction, confirmed fully clipped Add bounds on CI, then added catalogue scroll/displayed/enabled checks. No production change or timeout increase.
 - See docs/TASK5_CI_INSTRUMENTATION_REPORT.md for current evidence and unresolved verification.
 
 ## Task 2 architecture recovery — 2026-10-15

@@ -51,9 +51,10 @@ class ShoppingJourneyTest {
                 val selected = current?.selected ?: return@waitUntil false
                 current.dataFor(selected).items.any { it.name.equals("Bread", true) && it.quantity == expected }
             }
-        } catch (error: Throwable) {
-            captureDiagnostics("bread-$expected-timeout", error)
             diagnostics.stopTrace()
+        } catch (error: Throwable) {
+            diagnostics.stopTrace()
+            captureDiagnostics("bread-$expected-timeout", error)
             throw error
         }
     }
@@ -99,13 +100,23 @@ class ShoppingJourneyTest {
     private fun addBreadFromCatalogue(label: String) {
         if (!collectingDiagnostics) { diagnostics.start(); collectingDiagnostics = true }
         captureDiagnostics("$label-before")
+        // CI's shorter dp viewport composes Bread while its Add button is
+        // fully clipped below the LazyColumn. Existence/enabled is insufficient.
+        rule.onNodeWithContentDescription("Add Bread to shopping list")
+            .performScrollTo()
+            .assertIsDisplayed()
+            .assertIsEnabled()
+        captureDiagnostics("$label-ready")
+        if (label == "first-add") diagnostics.startTrace()
         diagnostics.dispatch = "$label started"
         try {
-            // Preserve the original interaction until evidence justifies a correction.
             rule.onNodeWithContentDescription("Add Bread to shopping list").performClick()
             diagnostics.dispatch = "$label returned"
-            captureDiagnostics("$label-after-dispatch")
+            // Keep the optional trace focused on injection/state update;
+            // screenshot and semantics work otherwise overwhelms its buffer.
+            if (!diagnostics.isTracing) captureDiagnostics("$label-after-dispatch")
         } catch (error: Throwable) {
+            diagnostics.stopTrace()
             diagnostics.dispatch = "$label threw ${error.javaClass.simpleName}"
             captureDiagnostics("$label-click-failure", error)
             throw error

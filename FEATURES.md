@@ -2,7 +2,7 @@
 
 ## Task 5 verification boundary
 
-Shopping behaviour is unchanged. Instrumentation records button identity, clipped bounds, enabled/displayed state, scroll ancestors, activity/IME/viewport, UI hierarchy, semantics, ViewModel events and committed Bread state. CI reliability remains unresolved pending diagnostic reproduction and a verified correction.
+Shopping behaviour is unchanged. Instrumentation records button identity, clipped bounds, enabled/displayed state, scroll ancestors, activity/IME/viewport, UI hierarchy, semantics, ViewModel events and committed Bread state. Diagnostic CI artifacts establish the off-screen Add mechanism. The test-only correction scrolls and verifies visibility/enabled state; corrected CI reliability is pending.
 
 ## Done
 

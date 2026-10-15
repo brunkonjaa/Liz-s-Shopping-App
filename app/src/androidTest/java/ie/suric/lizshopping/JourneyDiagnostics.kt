@@ -39,6 +39,7 @@ internal class JourneyDiagnostics(private val activity: () -> MainActivity) {
     }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var tracing = false
+    val isTracing: Boolean get() = tracing
     private var events = 0
     var dispatch = "not attempted"
 
@@ -51,9 +52,13 @@ internal class JourneyDiagnostics(private val activity: () -> MainActivity) {
             scope.launch { vm.state.collect { event("viewModel ${summary(it)}") } }
             scope.launch { vm.message.collect { event("message=${it?.take(200)}") } }
         }
+    }
+
+    fun startTrace() {
         // Optional exact method entry/exit evidence for LocalStore.save and
         // SQLite transaction completion, without adding hooks to production.
-        // Enable separately: tracing affects scheduling and is not a baseline.
+        // Start after the pre-click capture: tracing hierarchy/semantics dumps
+        // can exhaust the buffer before the interaction even happens.
         if (InstrumentationRegistry.getArguments().getString("journeyMethodTrace") == "true") {
             attempt("method-trace-start") {
                 Debug.startMethodTracing(File(directory, "first-add.trace").absolutePath, 16 * 1024 * 1024)
