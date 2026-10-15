@@ -61,6 +61,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -109,6 +110,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = {}, vm: ShoppingViewModel = viewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
+    val latestState = rememberUpdatedState(state)
     val message by vm.message.collectAsStateWithLifecycle()
     val restoreReady by vm.restoreReady.collectAsStateWithLifecycle()
     val loadFailed by vm.loadFailed.collectAsStateWithLifecycle()
@@ -193,20 +195,21 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
                 else -> "shop:${shop}:$tab"
             }
             Crossfade(targetState = route, animationSpec = tween(160), label = "Screen transition") { targetRoute ->
-            if (targetRoute == "loading" || s == null) {
+            val renderedState = latestState.value
+            if (targetRoute == "loading" || renderedState == null) {
                 Column(Modifier.padding(padding).padding(24.dp)) { if (loadFailed) Text("Saved data could not be loaded. Open options to restore a backup, or restart the app.") else { CircularProgressIndicator(); Text("Loading saved shopping lists…") } }
             } else if (targetRoute == "settings") {
-                SettingsPageV2(Modifier.padding(padding), s, themeMode, onThemeChange, { sheet = ActiveSheet.AddShop }, { name -> sheet = ActiveSheet.RenameShop(s.shop(name)) }, { name -> sheet = ActiveSheet.RemoveShop(s.shop(name)) })
+                SettingsPageV2(Modifier.padding(padding), renderedState, themeMode, onThemeChange, { sheet = ActiveSheet.AddShop }, { name -> sheet = ActiveSheet.RenameShop(renderedState.shop(name)) }, { name -> sheet = ActiveSheet.RemoveShop(renderedState.shop(name)) })
             } else if (targetRoute == "home") {
-                val homeShop = s.selected ?: s.shopNames().first()
-                HomePageV2(Modifier.padding(padding), s, { selected -> vm.select(selected); choosing = false; tab = 0; query = ""; category = null }, { vm.select(homeShop); choosing = false; tab = 1 }, { vm.select(homeShop); choosing = false; tab = 2 }, { vm.select(homeShop); choosing = false; tab = 0 })
+                val homeShop = renderedState.selected ?: renderedState.shopNames().first()
+                HomePageV2(Modifier.padding(padding), renderedState, { selected -> vm.select(selected); choosing = false; tab = 0; query = ""; category = null }, { vm.select(homeShop); choosing = false; tab = 1 }, { vm.select(homeShop); choosing = false; tab = 2 }, { vm.select(homeShop); choosing = false; tab = 0 })
             } else {
                 val activeShop = requireNotNull(shop)
-                val data = s.dataFor(activeShop)
+                val data = renderedState.dataFor(activeShop)
                 val edit = editing
         if (targetRoute == "editor" && edit != null) {
                     LizBottomSheet(if (edit.mode == "custom") "Add new product" else "Edit ${edit.item.name}", "Configure this product without leaving your shopping list.", { selectedImage = null; editing = null }) {
-                    ProductEditor(Modifier.fillMaxWidth(), edit, s.allProducts(), data.favourites.any { it.key() == edit.item.key() }, selectedImage, { imagePicker.launch(arrayOf("image/png", "image/jpeg", "image/webp")) }, { selectedImage = null; editing = null }) { item, productCategory, heart, image ->
+                    ProductEditor(Modifier.fillMaxWidth(), edit, renderedState.allProducts(), data.favourites.any { it.key() == edit.item.key() }, selectedImage, { imagePicker.launch(arrayOf("image/png", "image/jpeg", "image/webp")) }, { selectedImage = null; editing = null }) { item, productCategory, heart, image ->
                         when (edit.mode) { "list" -> vm.edit(activeShop, item); "favourite" -> vm.editFavourite(activeShop, edit.item, item); "custom" -> vm.custom(item, activeShop, productCategory, heart, image); else -> vm.add(activeShop, item) }
                         if (image != null && edit.mode != "custom") vm.importProductImage(edit.item.productId ?: edit.product?.id.orEmpty(), image)
                         if (edit.mode != "custom" && edit.mode != "favourite") { val wasFavourite = data.favourites.any { it.key() == edit.item.key() }; if (heart && !wasFavourite) vm.favourite(activeShop, item) else if (!heart && wasFavourite) vm.removeFavourite(activeShop, edit.item) }
@@ -216,9 +219,9 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
                     }
                 } else {
                     when (tab) {
-                         0 -> AllItemsPage(Modifier.padding(padding), activeShop, s, query, category, { query = it.take(100) }, { category = it }, { product -> editing = Editing(Item(name = product.name, variety = product.varieties.firstOrNull().orEmpty(), size = product.sizes.firstOrNull().orEmpty(), productId = product.id), product, "add") }, { product -> vm.addProduct(activeShop, product) }, { editing = Editing(Item(name = ""), null, "custom") }, { product -> toggleFavourite(vm, activeShop, data, product) })
-                         1 -> FavouritesPage(Modifier.padding(padding), activeShop, data, query, { query = it.take(100) }, { item -> editing = Editing(item, s.productFor(item) ?: s.allProducts().firstOrNull { p -> p.name.equals(item.name, true) }, "favourite") }, { item -> vm.removeFavourite(activeShop, item) }, { item -> vm.add(activeShop, item.copy(id = UUID.randomUUID().toString(), productId = item.productId)) })
-                         else -> ShoppingListPage(Modifier.padding(padding), activeShop, data, { item -> vm.complete(activeShop, item.id) }, { item -> vm.quantity(activeShop, item.id, -1) }, { item -> vm.quantity(activeShop, item.id, 1) }, { item -> editing = Editing(item, s.productFor(item) ?: s.allProducts().firstOrNull { p -> p.name.equals(item.name, true) }, "list") }, { item -> vm.remove(activeShop, item.id) }, { tab = 0; query = "" })
+                         0 -> AllItemsPage(Modifier.padding(padding), activeShop, renderedState, query, category, { query = it.take(100) }, { category = it }, { product -> editing = Editing(Item(name = product.name, variety = product.varieties.firstOrNull().orEmpty(), size = product.sizes.firstOrNull().orEmpty(), productId = product.id), product, "add") }, { product -> vm.addProduct(activeShop, product) }, { editing = Editing(Item(name = ""), null, "custom") }, { product -> toggleFavourite(vm, activeShop, data, product) })
+                         1 -> FavouritesPage(Modifier.padding(padding), activeShop, data, query, { query = it.take(100) }, { item -> editing = Editing(item, renderedState.productFor(item) ?: renderedState.allProducts().firstOrNull { p -> p.name.equals(item.name, true) }, "favourite") }, { item -> vm.removeFavourite(activeShop, item) }, { item -> vm.add(activeShop, item.copy(id = UUID.randomUUID().toString(), productId = item.productId)) })
+                         else -> ShoppingListPage(Modifier.padding(padding), activeShop, data, { item -> vm.complete(activeShop, item.id) }, { item -> vm.quantity(activeShop, item.id, -1) }, { item -> vm.quantity(activeShop, item.id, 1) }, { item -> editing = Editing(item, renderedState.productFor(item) ?: renderedState.allProducts().firstOrNull { p -> p.name.equals(item.name, true) }, "list") }, { item -> vm.remove(activeShop, item.id) }, { tab = 0; query = "" })
                     }
                 }
             }
