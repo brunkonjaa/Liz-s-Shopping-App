@@ -1,8 +1,11 @@
 package ie.suric.lizshopping
 
+import android.graphics.Bitmap
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import java.io.File
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -17,6 +20,9 @@ class ShoppingJourneyTest {
             rule.waitUntil(10_000) { rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
         } catch (error: ComposeTimeoutException) {
             rule.onRoot(useUnmergedTree = true).printToLog("ShoppingJourneyTimeout")
+            val screenshot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+            val output = File(InstrumentationRegistry.getInstrumentation().targetContext.filesDir, "shopping-journey-timeout.png")
+            output.outputStream().use { screenshot.compress(Bitmap.CompressFormat.PNG, 100, it) }
             throw error
         }
     }
