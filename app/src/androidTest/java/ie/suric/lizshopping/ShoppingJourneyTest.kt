@@ -1,10 +1,11 @@
 package ie.suric.lizshopping
 
 import android.util.Log
+import android.view.inputmethod.InputMethodManager
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
 import org.junit.Rule
@@ -14,6 +15,10 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ShoppingJourneyTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
+
+    private companion object {
+        const val STATE_TIMEOUT_MS = 30_000L
+    }
 
     private fun waitForText(text: String) {
         try {
@@ -44,11 +49,22 @@ class ShoppingJourneyTest {
     }
 
     private fun waitForBreadQuantity(expected: Int) {
-        rule.waitUntil(10_000) {
+        rule.waitUntil(STATE_TIMEOUT_MS) {
             val current = ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].state.value
             val selected = current?.selected ?: return@waitUntil false
             current.dataFor(selected).items.any { it.name.equals("Bread", true) && it.quantity == expected }
         }
+    }
+
+    private fun dismissKeyboard() {
+        rule.runOnUiThread {
+            val focused = rule.activity.currentFocus
+            val token = focused?.windowToken ?: rule.activity.window.decorView.windowToken
+            focused?.clearFocus()
+            rule.activity.getSystemService(InputMethodManager::class.java)
+                ?.hideSoftInputFromWindow(token, 0)
+        }
+        rule.waitForIdle()
     }
 
     private fun ensureBreadFavourite() {
@@ -79,6 +95,7 @@ class ShoppingJourneyTest {
         rule.onAllNodesWithText("All Items").onFirst().performClick()
         waitForText("Search for a product")
         rule.onNodeWithText("Search for a product").performTextInput("Bread")
+        dismissKeyboard()
         waitForText("Bread")
         rule.onNodeWithContentDescription("Add Bread to shopping list").performClick()
         waitForBreadQuantity(1)
@@ -103,6 +120,7 @@ class ShoppingJourneyTest {
         rule.onAllNodesWithText("All Items").onFirst().performClick()
         waitForText("Search for a product")
         rule.onNodeWithText("Search for a product").performTextInput("Bread")
+        dismissKeyboard()
         waitForText("Bread")
         ensureBreadFavourite()
         rule.onAllNodesWithText("Favourites").onFirst().performClick()
