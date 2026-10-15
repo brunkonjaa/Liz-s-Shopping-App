@@ -8,7 +8,7 @@ Date: 2026-10-16, Europe/Dublin. This report concerns the CI failure brief, sepa
 - Starting tree already contained changes to README, TESTING, CHANGELOG, Task 3/4 documents and the journey test, plus local captures. These were not used as the diagnostic baseline or overwritten.
 - Isolated worktree: `verification/task5-ci-diagnostics`, branch `fix/task5-ci-diagnostics`, based on the exact starting commit. Production source is unchanged.
 - Modified scope: `ShoppingJourneyTest.kt`, new `JourneyDiagnostics.kt` (androidTest only), `scripts/run_android_journey.sh`, `.github/workflows/android.yml`, the seven project documents, and this report. Local snapshots/logs remain ignored and are not included in publishing.
-- First published diagnostic commit: `bb57f5ae8409661a2891da6a71a252772e99b12c`; [draft PR #3](https://github.com/brunkonjaa/Liz-s-Shopping-App/pull/3) targets `fix/ci-journey-state`. Main and the original checkout remain unchanged. Final commit/tree verification follows CI investigation.
+- First published diagnostic commit: `bb57f5ae8409661a2891da6a71a252772e99b12c`; [draft PR #3](https://github.com/brunkonjaa/Liz-s-Shopping-App/pull/3) targets `fix/ci-journey-state`. Main and the original checkout remain unchanged. Current implementation commit: `265b941b211a88085e238dfadc431cd1e7de87c7` (current controls and transient-message synchronization). The final evidence commit changes documentation only; the implementation remains at this tested source revision. The isolated worktree is committed/clean; the original checkout retains its original six modified files and local captures. Both main refs remain `27c6f4a88b2ce6db05db44107465aa636ffd12ad`.
 
 ## B. Root-cause investigation
 
@@ -38,7 +38,7 @@ An initial diagnostic run failed before Add because Android had not initialized 
 
 **Supported category: interaction did not reach the intended off-screen control.** The test assumed that a composed enabled node could receive a screen tap without scrolling. This is a test viewport assumption. It does not demonstrate a navigation, animation, ViewModel or SQLite defect. Missing events alone do not prove no persistence attempt; that is not needed to establish that the target is entirely clipped and the original tap cannot hit it.
 
-The minimum correction is `performScrollTo().assertIsDisplayed().assertIsEnabled()` before the existing catalogue Add click, with a new ready-state capture proving the target has usable bounds. The subsequent experiment also established the need to synchronize with transient snackbar disappearance before the next interaction. Keep selectors, application APK, assertions, timeouts, keyboard handling and emulator settings unchanged. Corrected phone repetitions passed; corrected CI validation remains pending.
+The minimum correction is `performScrollTo().assertIsDisplayed().assertIsEnabled()` before the existing catalogue Add click, with a new ready-state capture proving the target has usable bounds. The subsequent experiment also established the need to synchronize with transient snackbar disappearance before the next interaction. Keep selectors, application APK, assertions, timeouts, keyboard handling and emulator settings unchanged. Corrected phone repetitions and the maintained current-app CI journey passed; see verification below.
 
 API contract reference: [Compose test interaction API](https://developer.android.com/reference/kotlin/androidx/compose/ui/test/SemanticsNodeInteraction) documents scrolling and displayed checks; the diagnosis above comes from this run's artifacts.
 
@@ -51,7 +51,7 @@ API contract reference: [Compose test interaction API](https://developer.android
 - The actual ready/after screenshot and semantics show the first Add's Material snackbar covering that centre: snackbar surface `(32,1426)-(1048,1552)`, message `Bread added to Lidl`. It has Polite LiveRegion, Alert pane and Dismiss semantics. Displayed/enabled assertions alone do not establish that a control is unobstructed.
 - The message cleared later, but a missed injected tap is not automatically retried. The 30-second quantity wait therefore still failed.
 
-The maintained test now synchronizes **before** card interaction on disappearance of the current snackbar semantics (Polite LiveRegion plus Dismiss action). This is an observable UI condition, not a fixed sleep or an increased timeout. Production snackbar behaviour is unchanged. Complete corrected CI verification remains pending.
+The maintained test now synchronizes **before** card interaction on disappearance of the current snackbar semantics (Polite LiveRegion plus Dismiss action). This is an observable UI condition, not a fixed sleep or an increased timeout. Production snackbar behaviour is unchanged. The final current-app revision passed the same CI emulator with snackbar synchronization; see verification below.
 
 ### Journey suitability after app changes
 
@@ -82,7 +82,7 @@ The user explicitly requested updating the journey after discussing UI changes. 
 - Retains every existing business outcome assertion and adds explicit quantity 6/7, independent favourite default 1, and post-recreation quantity 7 checks.
 - Reuses the same before/ready/after/timeout diagnostics for favourite Add and captures preparation failures too.
 
-These are test-only updates grounded in current captured semantics and the user's follow-up. They are being verified as a separate revision from the first CI scroll experiment; no production changes were made.
+These are test-only updates grounded in current captured semantics and the user's follow-up. They were verified as a separate revision from the first CI scroll experiment; no production changes were made.
 
 ## C. Changes and justification
 
@@ -91,7 +91,7 @@ These are test-only updates grounded in current captured semantics and the user'
 - At the actual quantity timeout: preserve PNG, accessibility XML, merged/unmerged semantics, target bounds, state/readback report, app-PID logcat and the original exception stack. Independent capture failures are logged without replacing the test exception. Original outcome assertions, test timeouts and application behaviour remain unchanged; the corrected interaction adds stronger visibility/enabled assertions.
 - CI script: collect selected logcat tags while the emulator is alive, record configuration/IME/activity details, tee Gradle output, preserve its exit status, and collect remaining evidence in an EXIT trap. This avoids attempting to collect all evidence after the emulator action has stopped the emulator or Gradle has uninstalled the app.
 - Workflow: retain the existing always-upload step, XML, Android test reports and Gradle additional output, and include the new host diagnostic directory. Build/security checks and emulator configuration remain unchanged. No dependencies added.
-- Seven project documents describe the diagnostic boundary, privacy constraints and outstanding CI acceptance criteria.
+- Seven project documents describe the verified correction, diagnostic boundary, privacy constraints and remaining coverage limits.
 
 ## D. Verification
 
@@ -108,18 +108,37 @@ These are test-only updates grounded in current captured semantics and the user'
 | Corrected unit/lint/APK/test APK command | Passed in 56s; production unchanged |
 | Corrected direct phone journey | 2/2 passed: 39.404s and 39.283s, each 1 test; both snapshots Bread 7, favourite 1, other shop lists empty |
 | Scroll-only GitHub journey | First Add fixed and durably saved; second Add missed under snackbar; quantity-2 timeout. Build/security/upload passed |
-| Current-app journey revision | Local build passed; first runtime caught duplicate home/drawer Lidl selector. Narrowed to the home card using its empty-fixture count; narrowed-selector + snackbar-synchronized journey passed on Samsung in 69.295s; final CI verification pending |
+| Current-app journey revision | Unit/lint/APK/test APK command passed in 50s. A temporary home/drawer selector ambiguity was caught locally and narrowed to the home card. Final direct Samsung runs passed 2/2: fresh-home fixture 69.295s; persisted-empty-Aldi fixture 68.745s. Both finish with list 7, favourite 1 and other shops empty |
+| Existing-data guard probe | Passed: refused a non-empty test-created list with the expected clear precondition failure; SQLite bytes unchanged |
+| Final current-app Gradle-connected Samsung | Passed: 1 test, 0 failures/errors; XML test duration 80.184s, command 1m 58s. Gradle pulled 78 diagnostic files with no capture errors |
+| Final current-app GitHub | [Run 38825384833](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38825384833), commit 265b941: both jobs passed, including unit/lint/APK, packaged-security and API 33 Pixel 2 x86_64 journey. XML: 1 test, 0 failures/errors, 25.391s testcase duration. Artifact upload passed |
 | Diagnostic Samsung through Gradle | Passed: 1 test, 0 failures/errors, 44.714s XML; Gradle pulled 43 diagnostic files before uninstalling. Reinstalled and restored every original DB/preferences file byte-for-byte, then launched |
 | Local matching Android 13 emulator | Not available: only API 37 images installed |
 
-Local APK SHA-256 before diagnostic changes: `3962A6F75694F648FE25EAFAB05C41B14E62B948F39ACBEF6D74302379AD8633`. The phone was snapshotted before testing; the original database had no saved state row. Each disposable run is restored from those original bytes, without `pm clear` or uninstalling the target app. The first restore-only check matched every original database/preferences file byte-for-byte and launched the app. Subsequent controlled tests require the same final restoration.
+Local APK SHA-256 before diagnostic changes: `3962A6F75694F648FE25EAFAB05C41B14E62B948F39ACBEF6D74302379AD8633`. The phone was snapshotted before testing; the original database had no saved state row. Each disposable run is restored from those original bytes, without `pm clear` or uninstalling the target app. Restore-only checks matched every original database/preferences file byte-for-byte and launched the app. After the final Gradle run, the app was reinstalled and launched; all original database/preferences files were verified byte-for-byte again after UI inspection. The final home UI has all four default shops and four zero-item counts. The final application APK is byte-identical to the starting APK (the same SHA-256 above).
+
+### CI artifact inspection and acceptance mapping
+
+[Successful artifact 12015495253](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38825384833/artifacts/12015495253) was downloaded and inspected. First Add has usable displayed/enabled bounds. Second Add's ready semantics contain no snackbar LiveRegion and its state report has `message=null`; the first quantity is durably 1. Final screenshot/accessibility XML visibly show Bread and quantity 7 after recreation; ViewModel and committed SQLite both report Bread 7, favourite default 1. Exit status is 0, XML records zero failures/errors, and no capture-errors report exists. The same graphics warnings occur in the passing run, with emulator settings unchanged.
+
+| Acceptance criterion | Evidence/status |
+| --- | --- |
+| Supported failure mechanism | Confirmed by two failed CI experiments: completely clipped first target, then snackbar covering second target |
+| Correction addresses the mechanism | Confirmed: scroll/displayed/enabled preconditions and snackbar disappearance synchronization; successful same-profile CI captures |
+| Existing functionality preserved | Current journey 3/3 Samsung runs (two direct, one Gradle), plus CI; quantities, completion, favourite independence, shop isolation, recreation |
+| Local checks pass | 50 fresh unit tests; lint 0 errors; debug and test APK builds; current connected journey |
+| GitHub instrumentation/build/security pass | Both jobs green in run 38825384833 |
+| Failure artifacts actually available | Failed-run ZIPs and successful ZIP downloaded/inspected; timeout stack, UI/state/logs retained; controlled local timeout probe passed |
+| No production/data/unrelated changes | No production/manifest/dependency/schema diff; identical app APK; original root diff unchanged; phone DB/preferences identical after restoration; private artifacts ignored |
 
 ## E. Remaining risks
 
-Both demonstrated interaction obstructions (clipping, then snackbar coverage) are established; full current-app journey CI and repeated-run validation remain outstanding. The app still temporarily overlays bottom content with a snackbar on short viewports; test synchronization respects that existing behaviour rather than altering the UI. The initial optional trace overflowed during pre-click capture and is not evidence of an absent save. Narrowing it to injection/state wait yielded a 3.9 MiB non-overflowing trace in a passing 42.777s journey: addProduct entry/return and LocalStore.save entry were recorded. The trace stopped at optimistic publication before save returned; subsequent committed readback confirmed Bread 1. Method entry alone is not a successful-write claim. The phone has a different viewport, density, animations, keyboard, ABI and graphics/runtime environment. Method tracing and diagnostic collection can change scheduling, so any passing diagnostic run needs comparison and repetition. A controlled timeout probe verifies artifact generation but cannot establish the cause of the genuine CI failure.
+No current journey failure remains in the verified revision. Passing repetitions provide bounded evidence, not a guarantee against every future intermittent failure or configuration. The app still temporarily overlays bottom content with a snackbar on short viewports; test synchronization respects that existing behaviour rather than changing the UI. A future UI change may require updating the role/control/fixture contract again.
 
-The journey covers quantities, completion, favourites, shop isolation and activity recreation; it does not establish reboot persistence, accessibility coverage or broad release readiness. No corrected-test or reliable-CI claim can be made yet.
+Only the CI host supplies the matching local-task emulator profile: no API 33 image was installed on this workstation, and no local API 37 emulator pass is claimed. Samsung density/viewport, keyboard, animations, ABI and graphics differ. The optional method trace changes scheduling; the initial trace overflowed and was discarded as causal evidence. Its narrowed follow-up did not overflow and observed addProduct plus LocalStore.save entry, while committed readback supplied write-success evidence.
+
+This journey does not establish reboot/process-restart persistence, editor/custom-item UI, backup/restore UI, custom shops/images, TalkBack, large fonts, landscape or broad release readiness. The controlled timeout and existing-data probes verify the diagnostic/guard contracts; their expected failures are separate from the passing normal journey.
 
 ## F. Verdict
 
-**PARTIALLY RESOLVED**: CI artifacts establish the off-screen Add and subsequent snackbar-covered tap. Test-only scroll and observable snackbar synchronization are implemented, together with the requested current-app journey updates. Final local/CI and repeated-run verification remain outstanding.
+**RESOLVED:** Diagnostic CI evidence establishes both interaction obstructions. The current-interface journey corrects scrolling and observable snackbar synchronization, preserves and strengthens its outcome assertions, passes repeated Samsung execution and GitHub Android 13 instrumentation, and retains useful failure artifacts. Unit, lint, APK and packaged-security checks pass. Production code, application APK, user data and unrelated original work are preserved. The PR remains draft and unmerged.

@@ -2,7 +2,7 @@
 
 ## Task 5 CI investigation - 2026-10-16
 
-The unchanged Android 13 emulator journey failed again on GitHub while the unchanged Samsung journey passed. CI artifacts establish that Add is fully clipped below the shorter emulator viewport. A second CI run confirmed the first Add works after scrolling, then exposed a snackbar covering the second tap. The maintained test scrolls, asserts displayed/enabled, and waits for the observable snackbar to clear before card interaction; production is unchanged. Corrected CI validation is pending. See [the CI investigation report](docs/TASK5_CI_INSTRUMENTATION_REPORT.md). Earlier phone/build passes do not establish CI reliability.
+The unchanged Android 13 emulator journey failed again on GitHub while the unchanged Samsung journey passed. CI artifacts establish that Add is fully clipped below the shorter emulator viewport. A second CI run confirmed the first Add works after scrolling, then exposed a snackbar covering the second tap. The maintained test scrolls, asserts displayed/enabled, and waits for the observable snackbar to clear before card interaction; production is unchanged. The current journey passed repeated Samsung runs and [GitHub Android 13 CI](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38825384833), including build/security checks. See [the CI investigation report](docs/TASK5_CI_INSTRUMENTATION_REPORT.md). Earlier phone/build passes do not establish CI reliability.
 
 Native Kotlin and Jetpack Compose grocery-list app for Lidl, Aldi, Dunnes Stores and SuperValu. It is offline-first and uses private SQLite snapshot storage; it has no accounts, network services, adverts, trackers or pricing.
 

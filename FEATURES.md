@@ -2,7 +2,7 @@
 
 ## Task 5 verification boundary
 
-Shopping behaviour is unchanged. Instrumentation records button identity, clipped bounds, enabled/displayed state, scroll ancestors, activity/IME/viewport, UI hierarchy, semantics, ViewModel events and committed Bread state. Diagnostic CI artifacts establish the off-screen Add mechanism. The test-only correction scrolls, verifies visibility/enabled state and synchronizes with the demonstrated snackbar obstruction; corrected CI reliability is pending.
+Shopping behaviour is unchanged. Instrumentation records button identity, clipped bounds, enabled/displayed state, scroll ancestors, activity/IME/viewport, UI hierarchy, semantics, ViewModel events and committed Bread state. Diagnostic CI artifacts establish the off-screen Add mechanism. The test-only correction scrolls, verifies visibility/enabled state and synchronizes with the demonstrated snackbar obstruction; the current journey passed repeated Samsung runs and Android 13 GitHub CI. Coverage limits remain in the investigation report.
 
 ## Done
 
