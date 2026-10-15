@@ -7,9 +7,13 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.getOrNull
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,6 +43,63 @@ class ShoppingJourneyTest {
         }
     }
 
+    private fun openTab(label: String) {
+        // Current navigation exposes Tab semantics. Do not choose the first
+        // text match, which could belong to a drawer item or another heading.
+        rule.onNode(hasText(label) and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+            .assertIsDisplayed()
+            .assertIsEnabled()
+            .performClick()
+    }
+
+    private fun waitForTransientMessageToClear() {
+        // Captured Material snackbar: Polite LiveRegion + Dismiss action. On
+        // CI it covers the centre of Add even when that button is displayed.
+        val snackbar = SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite) and
+            SemanticsMatcher.keyIsDefined(SemanticsActions.Dismiss)
+        try {
+            rule.waitUntil(STATE_TIMEOUT_MS) { rule.onAllNodes(snackbar).fetchSemanticsNodes().isEmpty() }
+        } catch (error: Throwable) {
+            captureDiagnostics("transient-message-timeout", error)
+            throw error
+        }
+    }
+
+    private fun visibleControl(description: String): SemanticsNodeInteraction {
+        waitForTransientMessageToClear()
+        return rule.onNodeWithContentDescription(description)
+            .performScrollTo()
+            .assertIsDisplayed()
+            .assertIsEnabled()
+    }
+
+    private fun startAtLidl() {
+        rule.waitUntil(STATE_TIMEOUT_MS) {
+            val vm = ViewModelProvider(rule.activity)[ShoppingViewModel::class.java]
+            vm.state.value != null || vm.loadFailed.value
+        }
+        val current = requireNotNull(ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].state.value) {
+            "Saved state did not load; the journey must not replace it."
+        }
+        // Refuse household data instead of silently assuming a fresh install
+        // or clearing it to make quantity-1 assertions pass.
+        assertTrue("Use an empty disposable test installation; this journey never clears saved data.",
+            current.custom.isEmpty() && current.stores.values.all {
+                it.items.isEmpty() && it.favourites.isEmpty() && it.previous.isEmpty()
+            })
+        closeDrawerIfOpen()
+        if (current.selected == null) {
+            rule.onNode(hasText("Lidl") and hasText("0 items") and hasClickAction())
+                .performScrollTo().assertIsDisplayed().performClick()
+        } else if (current.selected != "Lidl") {
+            rule.onNodeWithText("Change shop ▾").assertIsDisplayed().performClick()
+            rule.onNodeWithContentDescription("Select Lidl shop").assertIsDisplayed().performClick()
+        }
+        waitForText("Shopping List")
+        openTab("Shopping List")
+        waitForText("Your shopping list for Lidl")
+    }
+
     private fun logShoppingState(label: String) {
         rule.waitForIdle()
         diagnostics.event(label)
@@ -48,8 +109,8 @@ class ShoppingJourneyTest {
         try {
             rule.waitUntil(STATE_TIMEOUT_MS) {
                 val current = ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].state.value
-                val selected = current?.selected ?: return@waitUntil false
-                current.dataFor(selected).items.any { it.name.equals("Bread", true) && it.quantity == expected }
+                if (current?.selected != "Lidl") return@waitUntil false
+                current.dataFor("Lidl").items.any { it.name.equals("Bread", true) && it.quantity == expected }
             }
             diagnostics.stopTrace()
         } catch (error: Throwable) {
@@ -97,19 +158,16 @@ class ShoppingJourneyTest {
         }
     }
 
-    private fun addBreadFromCatalogue(label: String) {
+    private fun addBreadToList(label: String) {
         if (!collectingDiagnostics) { diagnostics.start(); collectingDiagnostics = true }
         captureDiagnostics("$label-before")
-        // CI's shorter dp viewport composes Bread while its Add button is
-        // fully clipped below the LazyColumn. Existence/enabled is insufficient.
-        rule.onNodeWithContentDescription("Add Bread to shopping list")
-            .performScrollTo()
-            .assertIsDisplayed()
-            .assertIsEnabled()
-        captureDiagnostics("$label-ready")
-        if (label == "first-add") diagnostics.startTrace()
-        diagnostics.dispatch = "$label started"
+        diagnostics.dispatch = "$label preparing"
         try {
+            // Catalogue and favourite cards share this current primary action.
+            visibleControl("Add Bread to shopping list")
+            captureDiagnostics("$label-ready")
+            if (label == "first-add") diagnostics.startTrace()
+            diagnostics.dispatch = "$label started"
             rule.onNodeWithContentDescription("Add Bread to shopping list").performClick()
             diagnostics.dispatch = "$label returned"
             // Keep the optional trace focused on injection/state update;
@@ -137,9 +195,9 @@ class ShoppingJourneyTest {
     private fun ensureBreadFavourite() {
         val saveDescription = "Save Bread as favourite"
         if (rule.onAllNodesWithContentDescription(saveDescription).fetchSemanticsNodes().isNotEmpty()) {
-            rule.onNodeWithContentDescription(saveDescription).performClick()
+            visibleControl(saveDescription).performClick()
         } else {
-            rule.onNodeWithContentDescription("Remove Bread from favourites").assertExists()
+            visibleControl("Remove Bread from favourites")
         }
     }
 
@@ -150,54 +208,58 @@ class ShoppingJourneyTest {
 
     @Test
     fun directAddQuantityCompletionFavouritesIsolationAndRelaunch() {
-        closeDrawerIfOpen()
-        if (rule.onAllNodesWithText("Shopping List").fetchSemanticsNodes().isEmpty()) {
-            waitForText("Lidl")
-            rule.onAllNodesWithText("Lidl").onFirst().performClick()
-            waitForText("Shopping List")
-        }
+        startAtLidl()
 
         // A catalogue product is added from its explicit primary control;
         // configuration remains available as a separate secondary action.
-        rule.onAllNodesWithText("All Items").onFirst().performClick()
+        openTab("All Items")
         waitForText("Search for a product")
-        rule.onNodeWithText("Search for a product").performTextInput("Bread")
+        rule.onNodeWithText("Search for a product").performTextReplacement("Bread")
         dismissKeyboard()
         waitForText("Bread")
-        addBreadFromCatalogue("first-add")
+        addBreadToList("first-add")
         waitForBreadQuantity(1)
         captureDiagnostics("first-add-observed")
         diagnostics.stopTrace()
         logShoppingState("afterFirstBreadAdd")
-        addBreadFromCatalogue("second-add")
+        addBreadToList("second-add")
         waitForBreadQuantity(2)
         logShoppingState("afterSecondBreadAdd")
 
-        rule.onAllNodesWithText("Shopping List").onFirst().performClick()
+        openTab("Shopping List")
         waitForText("Bread")
         rule.onNodeWithText("×2").assertExists()
 
         // Quantity changes stay on the list and tolerate rapid repeated taps.
-        repeat(5) { rule.onNodeWithContentDescription("Increase Bread quantity").performClick() }
-        rule.onNodeWithContentDescription("Decrease Bread quantity").performClick()
-        rule.onNodeWithContentDescription("Mark Bread bought").performClick()
+        val increase = visibleControl("Increase Bread quantity")
+        repeat(5) { increase.performClick() }
+        visibleControl("Decrease Bread quantity").performClick()
+        waitForBreadQuantity(6)
+        rule.onNodeWithText("×6").assertExists()
+        visibleControl("Mark Bread bought").performClick()
         rule.onNodeWithContentDescription("Mark Bread still to buy").assertExists()
-        rule.onNodeWithContentDescription("Mark Bread still to buy").performClick()
+        visibleControl("Mark Bread still to buy").performClick()
         rule.onNodeWithContentDescription("Mark Bread bought").assertExists()
 
         // Favourites reuse the same direct-add interaction.
-        rule.onAllNodesWithText("All Items").onFirst().performClick()
+        openTab("All Items")
         waitForText("Search for a product")
-        rule.onNodeWithText("Search for a product").performTextInput("Bread")
+        rule.onNodeWithText("Search for a product").performTextReplacement("Bread")
         dismissKeyboard()
         waitForText("Bread")
         ensureBreadFavourite()
-        rule.onAllNodesWithText("Favourites").onFirst().performClick()
+        openTab("Favourites")
         waitForText("Bread")
-        rule.onNodeWithContentDescription("Add Bread to shopping list").performClick()
+        addBreadToList("favourite-add")
         waitForBreadQuantity(7)
-        rule.onAllNodesWithText("Shopping List").onFirst().performClick()
+        rule.runOnIdle {
+            val data = requireNotNull(ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].state.value).dataFor("Lidl")
+            assertEquals("List edits must not change the favourite default", 1,
+                data.favourites.single { it.name.equals("Bread", true) }.quantity)
+        }
+        openTab("Shopping List")
         waitForText("Your shopping list for Lidl")
+        rule.onNodeWithText("×7").assertExists()
 
         // Switching shops keeps the lists independent.
         rule.onNodeWithText("Change shop ▾").performClick()
@@ -212,7 +274,9 @@ class ShoppingJourneyTest {
         // The current shop reopens directly into its list after recreation.
         rule.activityRule.scenario.recreate()
         waitForText("Your shopping list for Lidl")
+        waitForBreadQuantity(7)
         rule.onNodeWithText("Bread").assertExists()
+        rule.onNodeWithText("×7").assertExists()
         captureDiagnostics("journey-final")
     }
 }

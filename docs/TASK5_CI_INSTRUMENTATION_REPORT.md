@@ -26,7 +26,7 @@ The passing diagnostic phone run recorded exactly one enabled, displayed Add wit
 
 An initial diagnostic run failed before Add because Android had not initialized its app-owned external output directory; this diagnostic defect was corrected with the platform directory API and non-masking setup/teardown. Runtime artifact inspection also found that collection-level semantics output defaulted to roots only; the helper now prints each root interaction with descendants.
 
-### Confirmed failure mechanism
+### Confirmed original failure mechanism
 
 [Diagnostic CI run 38823320223](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38823320223) reproduced the same first-add timeout and successfully uploaded [artifact 12014083518](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38823320223/artifacts/12014083518). The downloaded ZIP was inspected, including the actual PNG, accessibility XML, merged/unmerged semantics, state reports and runner/logcat evidence.
 
@@ -38,9 +38,51 @@ An initial diagnostic run failed before Add because Android had not initialized 
 
 **Supported category: interaction did not reach the intended off-screen control.** The test assumed that a composed enabled node could receive a screen tap without scrolling. This is a test viewport assumption. It does not demonstrate a navigation, animation, ViewModel or SQLite defect. Missing events alone do not prove no persistence attempt; that is not needed to establish that the target is entirely clipped and the original tap cannot hit it.
 
-The minimum correction is `performScrollTo().assertIsDisplayed().assertIsEnabled()` before the existing catalogue Add click, with a new ready-state capture proving the target has usable bounds. Keep selectors, application APK, assertions, timeouts, keyboard handling and emulator settings unchanged. Corrected CI and repeated-run validation remain pending.
+The minimum correction is `performScrollTo().assertIsDisplayed().assertIsEnabled()` before the existing catalogue Add click, with a new ready-state capture proving the target has usable bounds. The subsequent experiment also established the need to synchronize with transient snackbar disappearance before the next interaction. Keep selectors, application APK, assertions, timeouts, keyboard handling and emulator settings unchanged. Corrected phone repetitions passed; corrected CI validation remains pending.
 
 API contract reference: [Compose test interaction API](https://developer.android.com/reference/kotlin/androidx/compose/ui/test/SemanticsNodeInteraction) documents scrolling and displayed checks; the diagnosis above comes from this run's artifacts.
+
+### Second discriminating CI experiment: scroll alone
+
+[Run 38824351866](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38824351866), correction commit `8e8fcf067d93ffceaacf227c2cb0dda714f9aaa9`, passed build/security and reproduced a **later** interaction failure. Its [artifact 12015055805](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38824351866/artifacts/12015055805) was downloaded and inspected:
+
+- Scrolling changed the Add bounds from zero to `(310,1479)-(528,1584)`, displayed/enabled. First Add then published and durably saved Bread 1. This confirms the first correction addressed the original boundary.
+- Second Add was dispatched at the same visible centre `(419,1531.5)`, but Bread remained 1 through the quantity-2 timeout. It is not the original quantity-1 failure.
+- The actual ready/after screenshot and semantics show the first Add's Material snackbar covering that centre: snackbar surface `(32,1426)-(1048,1552)`, message `Bread added to Lidl`. It has Polite LiveRegion, Alert pane and Dismiss semantics. Displayed/enabled assertions alone do not establish that a control is unobstructed.
+- The message cleared later, but a missed injected tap is not automatically retried. The 30-second quantity wait therefore still failed.
+
+The maintained test now synchronizes **before** card interaction on disappearance of the current snackbar semantics (Polite LiveRegion plus Dismiss action). This is an observable UI condition, not a fixed sleep or an increased timeout. Production snackbar behaviour is unchanged. Complete corrected CI verification remains pending.
+
+### Journey suitability after app changes
+
+The workflow was added in `aed993cd866564f7e0b2f930c34176e5ffc94916` (2026-10-14 00:08 Dublin); Git attributes that commit to the configured Bruno Suric identity, which does not identify a human versus an agent writer. Both app and test are built from the same current checkout. The direct-add journey was rewritten in `b5497842da704e10f5dcd98e2708ef4c8b422ecd` on 15 October. Its predecessor scrolled editor controls; the new catalogue Add clicks omitted scrolling. This omission fits the demonstrated viewport failure.
+
+The current outcome expectations were checked against project requirements, current Rules/ViewModel/UI code and fresh phone state, without weakening assertions:
+
+| Current behaviour | Journey expectation | Evidence |
+| --- | --- | --- |
+| Catalogue Add adds one package | First Bread 1, second Bread 2 | Rules.defaultItem count 1; both phone publications/readback |
+| Package count controls remain independent of size | 2 + five increments - one decrement = 6 | Current quantity actions; state-event sequence |
+| Favourite defaults remain independent | Favourite 1, list 6 + 1 = 7 | Favourite Add and final SQLite snapshots |
+| Completion can toggle both ways | Bought / still-to-buy controls swap | Existing UI assertions passed |
+| Shops have independent lists | Aldi empty; Lidl retains Bread | Existing UI assertions and saved per-shop snapshots |
+| Activity recreation restores selected shop/list | Lidl reopens with Bread 7 | Existing journey plus final state/UI captures |
+
+This single journey is not full feature coverage. The rewritten flow does not cover the earlier editor/custom-item cases, backup/restore UI, custom-shop management, image selection, accessibility, large fonts, landscape or reboot/process-restart persistence. Unit storage/migration checks do not substitute for those UI journeys. They remain explicitly unverified rather than reasons to remove the valid current assertions.
+
+### Follow-up instruction: align the journey with the current app
+
+The user explicitly requested updating the journey after discussing UI changes. After separately validating the minimal scroll correction, the maintained journey now:
+
+- Waits for loaded state and refuses existing list/favourite/previous/custom-product data instead of deleting it or assuming an empty fixture.
+- Explicitly selects Lidl using current home/shop-sheet controls, including the current returning-user launch behaviour.
+- Selects navigation items by their current Tab role and label, removing first-text-match assumptions.
+- Uses displayed/enabled scroll preconditions for the current catalogue, favourite and list card controls; rapid increments still perform five actual taps.
+- Replaces search text deterministically and preserves the real direct Add actions.
+- Retains every existing business outcome assertion and adds explicit quantity 6/7, independent favourite default 1, and post-recreation quantity 7 checks.
+- Reuses the same before/ready/after/timeout diagnostics for favourite Add and captures preparation failures too.
+
+These are test-only updates grounded in current captured semantics and the user's follow-up. They are being verified as a separate revision from the first CI scroll experiment; no production changes were made.
 
 ## C. Changes and justification
 
@@ -64,7 +106,9 @@ API contract reference: [Compose test interaction API](https://developer.android
 | CI collection shell syntax and exit-status harness | Passed: failure 7 and success 0 retained runner stderr/stdout, logs/configuration and exact exit status |
 | Diagnostic GitHub workflow and actual failure artifacts | Failed at original first Add as expected; full failure artifacts downloaded and inspected; build/security and always-upload passed |
 | Corrected unit/lint/APK/test APK command | Passed in 56s; production unchanged |
-| Corrected phone and GitHub journey | Pending |
+| Corrected direct phone journey | 2/2 passed: 39.404s and 39.283s, each 1 test; both snapshots Bread 7, favourite 1, other shop lists empty |
+| Scroll-only GitHub journey | First Add fixed and durably saved; second Add missed under snackbar; quantity-2 timeout. Build/security/upload passed |
+| Current-app journey revision | Local build passed; first runtime caught duplicate home/drawer Lidl selector. Narrowed to the home card using its empty-fixture count; narrowed-selector + snackbar-synchronized journey passed on Samsung in 69.295s; final CI verification pending |
 | Diagnostic Samsung through Gradle | Passed: 1 test, 0 failures/errors, 44.714s XML; Gradle pulled 43 diagnostic files before uninstalling. Reinstalled and restored every original DB/preferences file byte-for-byte, then launched |
 | Local matching Android 13 emulator | Not available: only API 37 images installed |
 
@@ -72,10 +116,10 @@ Local APK SHA-256 before diagnostic changes: `3962A6F75694F648FE25EAFAB05C41B14E
 
 ## E. Remaining risks
 
-The viewport failure mechanism is established; corrected CI and repeated-run validation remain outstanding. The initial optional trace overflowed during pre-click capture and is not evidence of an absent save. Narrowing it to injection/state wait yielded a 3.9 MiB non-overflowing trace in a passing 42.777s journey: addProduct entry/return and LocalStore.save entry were recorded. The trace stopped at optimistic publication before save returned; subsequent committed readback confirmed Bread 1. Method entry alone is not a successful-write claim. The phone has a different viewport, density, animations, keyboard, ABI and graphics/runtime environment. Method tracing and diagnostic collection can change scheduling, so any passing diagnostic run needs comparison and repetition. A controlled timeout probe verifies artifact generation but cannot establish the cause of the genuine CI failure.
+Both demonstrated interaction obstructions (clipping, then snackbar coverage) are established; full current-app journey CI and repeated-run validation remain outstanding. The app still temporarily overlays bottom content with a snackbar on short viewports; test synchronization respects that existing behaviour rather than altering the UI. The initial optional trace overflowed during pre-click capture and is not evidence of an absent save. Narrowing it to injection/state wait yielded a 3.9 MiB non-overflowing trace in a passing 42.777s journey: addProduct entry/return and LocalStore.save entry were recorded. The trace stopped at optimistic publication before save returned; subsequent committed readback confirmed Bread 1. Method entry alone is not a successful-write claim. The phone has a different viewport, density, animations, keyboard, ABI and graphics/runtime environment. Method tracing and diagnostic collection can change scheduling, so any passing diagnostic run needs comparison and repetition. A controlled timeout probe verifies artifact generation but cannot establish the cause of the genuine CI failure.
 
 The journey covers quantities, completion, favourites, shop isolation and activity recreation; it does not establish reboot persistence, accessibility coverage or broad release readiness. No corrected-test or reliable-CI claim can be made yet.
 
 ## F. Verdict
 
-**PARTIALLY RESOLVED**: the CI artifacts establish the off-screen-control mechanism and a test-only scroll correction is implemented. Corrected CI/repeated-run verification remains outstanding. A local pass alone does not resolve this task.
+**PARTIALLY RESOLVED**: CI artifacts establish the off-screen Add and subsequent snackbar-covered tap. Test-only scroll and observable snackbar synchronization are implemented, together with the requested current-app journey updates. Final local/CI and repeated-run verification remain outstanding.
