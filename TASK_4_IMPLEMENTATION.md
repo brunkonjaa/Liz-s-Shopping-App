@@ -19,4 +19,4 @@ Forms validate before their save callback; validation failures leave the sheet o
 
 ## Accessibility and verification boundary
 
-Important selected-shop state is expressed with radio controls and text, not colour alone. Quantity buttons, favourite buttons, drawer entries and list controls expose content descriptions. Unit tests cover category normalization, quantity bounds, shop identity and existing persistence/migration invariants. The connected journey remains the required next verification for the new sheets; API 37 emulator limitations, large-font/TalkBack checks and screenshot comparison must be reported if unavailable.
+Important selected-shop state is expressed with radio controls and text, not colour alone. Quantity buttons, favourite buttons, drawer entries and list controls expose content descriptions. Unit tests cover category normalization, quantity bounds, shop identity and existing persistence/migration invariants. The connected journey and representative sheet screenshots were verified on Samsung SM-A127F / Android 13; API 37 emulator limitations, large-font/TalkBack checks and device-level persistence after restart remain open.

@@ -1,5 +1,13 @@
 # Testing
 
+## Task 4 evidence - 2026-10-15
+
+- `./gradlew.bat testDebugUnitTest lintDebug assembleDebug --console=plain` passed after the Task 4 changes.
+- `./gradlew.bat connectedDebugAndroidTest --console=plain` passed on the connected Samsung SM-A127F / Android 13: 1 test, 0 failures, 0 errors.
+- Manual launch, UI-tree inspection, change-shop sheet inspection and product-sheet scrolling were completed on the same device. Screenshots are stored under ignored `verification/` output; no clipping was observed in the inspected views.
+- A standalone restart produced no Liz app crash-buffer lines, but it did not establish data persistence because the instrumentation run had reset app data before the standalone launch. Persistence remains unverified at the device level; storage round-trip and migration tests remain covered by `StorageTest`.
+- The API 37 emulator remains unverified because of its previously observed startup/high-CPU issue.
+
 ## Task 4 focused coverage
 
 - `RulesTest` covers case/whitespace-insensitive category reuse, invalid short categories and the distinction between suggested and built-in shops.
