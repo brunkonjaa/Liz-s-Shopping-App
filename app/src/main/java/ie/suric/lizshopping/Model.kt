@@ -111,7 +111,7 @@ object Rules {
             name = product.name,
             variety = variety,
             size = size,
-            quantity = saved?.quantity?.coerceIn(1, 999) ?: 1,
+            quantity = 1,
             productId = product.id
         )
     }
