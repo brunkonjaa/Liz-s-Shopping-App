@@ -1,5 +1,9 @@
 # Security and privacy
 
+## Task 5 diagnostic artifacts
+
+Diagnostic code is packaged only in the test APK. It adds no production permissions, dependencies, telemetry or storage hooks. State reports include Bread quantities and collection counts instead of a household backup. UI trees/screenshots can contain visible data: use disposable test state. CI captures selected app/test/SQLite log tags on its fresh emulator; phone log capture is limited to the app PID. Private database snapshots and phone captures remain in ignored verification output.
+
 ## Controls implemented
 
 - No Android permissions, `INTERNET` permission, network SDK, account, analytics, adverts or server were added.

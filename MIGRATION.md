@@ -1,5 +1,9 @@
 # Storage and backup migration
 
+## Task 5 compatibility check
+
+The CI investigation changes no schema, backup version, product/shop identity or migration. Diagnostic SQLite access is read-only and does not run LocalStore.onUpgrade. Existing migration and transactional-preservation tests remain required.
+
 ## Database
 
 The private SQLite database is schema version 2. Version 1 contains one `state` row with a version-1 JSON payload. Opening a version-1 database invokes `LocalStore.onUpgrade`, decodes the old payload, assigns stable product references, seeds stable shop definitions, rebuilds shop associations, validates the result and writes one version-2 payload inside the SQLite upgrade transaction.

@@ -3,9 +3,11 @@ package ie.suric.lizshopping
 import android.util.Log
 import android.view.inputmethod.InputMethodManager
 import androidx.lifecycle.ViewModelProvider
-import androidx.test.platform.app.InstrumentationRegistry
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
 import org.junit.Rule
@@ -15,6 +17,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ShoppingJourneyTest {
     @get:Rule val rule = createAndroidComposeRule<MainActivity>()
+    private val diagnostics by lazy { JourneyDiagnostics { rule.activity } }
+    private var collectingDiagnostics = false
 
     private companion object {
         const val STATE_TIMEOUT_MS = 30_000L
@@ -24,12 +28,7 @@ class ShoppingJourneyTest {
         try {
             rule.waitUntil(10_000) { rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
         } catch (error: ComposeTimeoutException) {
-            rule.onRoot(useUnmergedTree = true).printToLog("ShoppingJourneyTimeout")
-            val current = ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].state.value
-            val selected = current?.selected
-            val items = selected?.let { current.dataFor(it).items }.orEmpty()
-            Log.e("ShoppingJourneyTimeout", "expected=$text selected=$selected items=${items.map { it.name + " x" + it.quantity }} addCompleted=${items.any { it.name.equals("Bread", true) }}")
-            InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("screencap -p /sdcard/shopping-journey-timeout.png").close()
+            captureDiagnostics("text-timeout", error)
             throw error
         }
     }
@@ -42,17 +41,74 @@ class ShoppingJourneyTest {
 
     private fun logShoppingState(label: String) {
         rule.waitForIdle()
-        val current = ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].state.value
-        val selected = current?.selected
-        val items = selected?.let { current.dataFor(it).items }.orEmpty()
-        Log.e("ShoppingJourneyState", "$label selected=$selected items=${items.map { it.name + " x" + it.quantity }} message=${ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].message.value}")
+        diagnostics.event(label)
     }
 
     private fun waitForBreadQuantity(expected: Int) {
-        rule.waitUntil(STATE_TIMEOUT_MS) {
-            val current = ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].state.value
-            val selected = current?.selected ?: return@waitUntil false
-            current.dataFor(selected).items.any { it.name.equals("Bread", true) && it.quantity == expected }
+        try {
+            rule.waitUntil(STATE_TIMEOUT_MS) {
+                val current = ViewModelProvider(rule.activity)[ShoppingViewModel::class.java].state.value
+                val selected = current?.selected ?: return@waitUntil false
+                current.dataFor(selected).items.any { it.name.equals("Bread", true) && it.quantity == expected }
+            }
+        } catch (error: Throwable) {
+            captureDiagnostics("bread-$expected-timeout", error)
+            diagnostics.stopTrace()
+            throw error
+        }
+    }
+
+    private fun captureDiagnostics(label: String, error: Throwable? = null) {
+        // Even output-directory initialization must not replace the test failure.
+        try {
+            diagnostics.capture(label, error)
+            diagnostics.attempt("$label-semantics") {
+                fun tree(unmerged: Boolean): String {
+                    val roots = rule.onAllNodes(isRoot(), useUnmergedTree = unmerged)
+                    return roots.fetchSemanticsNodes().indices.joinToString("\n") { roots[it].printToString() }
+                }
+                java.io.File(diagnostics.directory, "$label-semantics.txt").writeText(
+                    "MERGED\n" + tree(false) + "\nUNMERGED\n" + tree(true)
+                )
+            }
+            diagnostics.attempt("$label-button") {
+                val matches = rule.onAllNodesWithContentDescription("Add Bread to shopping list").fetchSemanticsNodes()
+                val report = buildString {
+                    appendLine("matchingAddButtons=${matches.size}")
+                    matches.forEach { node ->
+                        appendLine("id=${node.id} rootBounds=${node.boundsInRoot} windowBounds=${node.boundsInWindow}")
+                        appendLine("centerInRoot=${node.boundsInRoot.center} centerInWindow=${node.boundsInWindow.center}")
+                        appendLine("enabled=${!node.config.contains(SemanticsProperties.Disabled)} hasClickAction=${node.config.getOrNull(SemanticsActions.OnClick)?.action != null}")
+                        var ancestor = node.parent
+                        while (ancestor != null) {
+                            val range = ancestor.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange)
+                            if (range != null) appendLine("scrollAncestor=${ancestor.id} bounds=${ancestor.boundsInRoot} value=${range.value()} max=${range.maxValue()} reverse=${range.reverseScrolling}")
+                            ancestor = ancestor.parent
+                        }
+                    }
+                    if (matches.size == 1) appendLine("displayed=${rule.onNodeWithContentDescription("Add Bread to shopping list").isDisplayed()}")
+                    appendLine("A returned performClick proves dispatch completed, not callback delivery. Bounds/visibility do not prove absence of overlays.")
+                }
+                java.io.File(diagnostics.directory, "$label-button.txt").writeText(report)
+            }
+        } catch (captureError: Throwable) {
+            Log.e("ShoppingJourneyEvidence", "Diagnostic setup failed for $label", captureError)
+        }
+    }
+
+    private fun addBreadFromCatalogue(label: String) {
+        if (!collectingDiagnostics) { diagnostics.start(); collectingDiagnostics = true }
+        captureDiagnostics("$label-before")
+        diagnostics.dispatch = "$label started"
+        try {
+            // Preserve the original interaction until evidence justifies a correction.
+            rule.onNodeWithContentDescription("Add Bread to shopping list").performClick()
+            diagnostics.dispatch = "$label returned"
+            captureDiagnostics("$label-after-dispatch")
+        } catch (error: Throwable) {
+            diagnostics.dispatch = "$label threw ${error.javaClass.simpleName}"
+            captureDiagnostics("$label-click-failure", error)
+            throw error
         }
     }
 
@@ -78,7 +134,7 @@ class ShoppingJourneyTest {
 
     @After
     fun captureFinalState() {
-        rule.waitForIdle()
+        if (collectingDiagnostics) diagnostics.close()
     }
 
     @Test
@@ -97,10 +153,12 @@ class ShoppingJourneyTest {
         rule.onNodeWithText("Search for a product").performTextInput("Bread")
         dismissKeyboard()
         waitForText("Bread")
-        rule.onNodeWithContentDescription("Add Bread to shopping list").performClick()
+        addBreadFromCatalogue("first-add")
         waitForBreadQuantity(1)
+        captureDiagnostics("first-add-observed")
+        diagnostics.stopTrace()
         logShoppingState("afterFirstBreadAdd")
-        rule.onNodeWithContentDescription("Add Bread to shopping list").performClick()
+        addBreadFromCatalogue("second-add")
         waitForBreadQuantity(2)
         logShoppingState("afterSecondBreadAdd")
 
@@ -144,5 +202,6 @@ class ShoppingJourneyTest {
         rule.activityRule.scenario.recreate()
         waitForText("Your shopping list for Lidl")
         rule.onNodeWithText("Bread").assertExists()
+        captureDiagnostics("journey-final")
     }
 }

@@ -1,5 +1,15 @@
 # Testing
 
+## Task 5 CI instrumentation investigation - 2026-10-16
+
+The starting commit is 5d331b85ac8133d113d06ec643d194c59abf543f. An unchanged Samsung Android 13 run passed; GitHub run 38818122991 failed again at waitForBreadQuantity(1). Diagnostic results and the current verdict are in [the CI report](docs/TASK5_CI_INSTRUMENTATION_REPORT.md).
+
+Journey diagnostics are written under additionalTestOutputDir/journey-diagnostics, which Gradle pulls before uninstalling. CI also retains app/build/reports/journey-diagnostics (runner output, filtered logcat, environment and exit status). Artifact upload uses always(). Both merged and unmerged semantics, accessibility XML, screenshots, bounds, IME, ViewModel events, committed Bread state and original failure stacks are retained. Capture errors are recorded separately.
+
+Optional deeper tracing: pass -Pandroid.testInstrumentationRunnerArguments.journeyMethodTrace=true to connectedDebugAndroidTest. This records exact method entry/exit for analysis of LocalStore.save and SQLite transactions; compare separately because tracing changes scheduling. A missing event, successful injection, or incomplete readback must not be promoted to a confirmed failure category.
+
+Run unit tests, lint, debug assembly and repeated connected journeys before claiming a tested APK. Protect household data before any instrumentation that may reset/uninstall the app; retained local phone snapshots must not be uploaded.
+
 ## Task 4 evidence - 2026-10-15
 
 - `./gradlew.bat testDebugUnitTest lintDebug assembleDebug --console=plain` passed after the Task 4 changes.

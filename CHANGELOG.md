@@ -1,5 +1,12 @@
 # Changelog
 
+## Task 5 CI instrumentation investigation - 2026-10-16
+
+- Reproduced the unchanged GitHub Android 13 first-add quantity timeout and a passing unchanged Samsung journey.
+- Added test-only first-add/timeout diagnostics and failure-safe CI runner, logcat and emulator configuration retention.
+- Kept original interactions and timeouts while investigating; no speculative production fix.
+- See docs/TASK5_CI_INSTRUMENTATION_REPORT.md for current evidence and unresolved verification.
+
 ## Task 2 architecture recovery — 2026-10-15
 
 - Added stable reusable product IDs, product references on shopping entries and stable shop definitions.

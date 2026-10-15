@@ -1,5 +1,9 @@
 # Features
 
+## Task 5 verification boundary
+
+Shopping behaviour is unchanged. Instrumentation records button identity, clipped bounds, enabled/displayed state, scroll ancestors, activity/IME/viewport, UI hierarchy, semantics, ViewModel events and committed Bread state. CI reliability remains unresolved pending diagnostic reproduction and a verified correction.
+
 ## Done
 
 - Shared offline catalogue with stable product identity, reusable product definitions, varieties, package sizes and optional image metadata.

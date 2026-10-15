@@ -1,5 +1,9 @@
 # Architecture
 
+## Task 5 diagnostic boundary
+
+JourneyDiagnostics lives exclusively in androidTest. It observes ViewModel flows and reads the committed SQLite snapshot using OPEN_READONLY, without constructing LocalStore or changing production state. Optional method tracing can establish save/transaction method entry and exit but changes scheduling. A returned injected click does not prove callback delivery, and committed readback alone cannot identify an attempted or failed write.
+
 Liz's Shopping List is a native Kotlin/Jetpack Compose, offline-first application with one Compose activity, one state-owning ViewModel and a small platform SQLite snapshot store. The package/application ID remains `ie.suric.lizshopping`.
 
 ## State model
