@@ -84,9 +84,10 @@ class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
         Rules.favourite(data.copy(favourites = data.favourites.filterNot { it.id == old.id }), canonical(current, new))
     }
 
-    fun custom(item: Item, shop: String, favourite: Boolean, image: ImportedImage? = null) = update("${item.name} saved") { state ->
+    fun custom(item: Item, shop: String, category: String, favourite: Boolean, image: ImportedImage? = null) = update("${item.name} saved") { state ->
         val existing = state.allProducts().firstOrNull { it.name.equals(item.name.trim(), true) }
-        val product = existing ?: Product(item.name.trim(), "Other", "🛍", listOf(item.variety), listOf(item.size), id = "custom:${UUID.randomUUID()}", imageRef = image?.reference, imageDataBase64 = image?.base64)
+        val cleanCategory = Rules.category(state.categories(), category)
+        val product = existing ?: Product(item.name.trim(), cleanCategory, "🛍", listOf(item.variety), listOf(item.size), id = "custom:${UUID.randomUUID()}", imageRef = image?.reference, imageDataBase64 = image?.base64)
         val clean = Rules.checked(item.copy(productId = product.id))
         val definition = state.shop(shop)
         val data = state.stores[definition.id] ?: ShopData()

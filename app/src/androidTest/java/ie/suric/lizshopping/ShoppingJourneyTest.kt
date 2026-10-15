@@ -23,7 +23,7 @@ class ShoppingJourneyTest {
             ?.let(::File)
             ?: File(instrumentation.targetContext.externalMediaDirs.first(), "additional_test_output")
         check(outputDirectory.isDirectory || outputDirectory.mkdirs())
-        File(outputDirectory, "$name-semantics.txt").writeText(rule.onRoot().printToString())
+        File(outputDirectory, "$name-semantics.txt").writeText(rule.onAllNodes(isRoot()).onFirst().printToString())
         FileOutputStream(File(outputDirectory, "$name.png")).use { output ->
             check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
         }
@@ -75,8 +75,8 @@ class ShoppingJourneyTest {
         rule.onNodeWithText("Free Range · 12 pack · ×1").assertExists()
         rule.onNodeWithText("+ Add").performClick()
         rule.onNodeWithText("Change shop ▾").performClick()
-        rule.onNode(hasText("Aldi") and hasText("0 items")).performClick()
-        waitForText("Search for a product")
+        rule.onNodeWithContentDescription("Select Aldi shop").performClick()
+        waitForText("Favourites")
         waitForText("Shopping List")
         rule.onAllNodesWithText("Shopping List").onFirst().performClick()
         rule.onNodeWithText("Your shopping list is empty").assertExists()
@@ -89,7 +89,7 @@ class ShoppingJourneyTest {
         waitForText("Liz's special biscuits")
         rule.onNodeWithText("Liz's special biscuits").assertExists()
         rule.onNodeWithText("Change shop ▾").performClick()
-        rule.onAllNodesWithText("Lidl").onFirst().performClick()
+        rule.onNodeWithContentDescription("Select Lidl shop").performClick()
         waitForText("Shopping List")
         rule.onAllNodesWithText("Shopping List").onFirst().performClick()
         waitForText("Milk")

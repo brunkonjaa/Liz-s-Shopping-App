@@ -23,7 +23,7 @@ Bundled products use stable symbolic/image references and an emoji fallback. Use
 
 ## UI boundaries
 
-`MainActivity.kt`, `Components.kt` and `Theme.kt` preserve the Task 3 warm editorial design, drawer, themes, catalogue, favourites and list flows. Dynamic shop definitions are shown through the existing home cards and drawer. The current focused product editor exposes the document picker without introducing a new navigation framework. Comprehensive shared bottom-sheet workflows remain Task 4.
+`MainActivity.kt`, `Components.kt`, `Task4Sheets.kt` and `Theme.kt` preserve the Task 3 warm editorial design, drawer, themes, catalogue, favourites and list flows. `LizBottomSheet` is the shared Material 3 modal surface for contextual selection, creation, editing, confirmation and options. Dynamic shop definitions are shown through the home cards, drawer and change-shop sheet. The product editor remains the existing stateful editor, now presented in the shared sheet surface with catalogue reuse suggestions, category validation and keyboard-safe scrolling.
 
 ## Deliberate constraints
 

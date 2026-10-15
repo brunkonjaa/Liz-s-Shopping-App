@@ -13,6 +13,7 @@ object ShopDefaults {
         Shop("SuperValu", "SuperValu", builtIn = true)
     )
     val names = definitions.map { it.name }
+    val suggestedNames = listOf("Dealz", "Euro Shop", "European Shop", "Spar", "Centra")
 }
 
 val shops = ShopDefaults.names
@@ -66,6 +67,9 @@ fun ShoppingState.shopNames(): List<String> = shopDefinitions.map { it.name }
 fun ShoppingState.dataFor(name: String): ShopData = stores[shop(name).id] ?: ShopData()
 fun ShoppingState.allProducts(): List<Product> = (Catalogue.products + custom).distinctBy { it.id }
 fun ShoppingState.productFor(item: Item): Product? = allProducts().firstOrNull { it.id == item.productId }
+fun ShoppingState.categories(): List<String> = (Catalogue.categories + custom.map { it.category })
+    .filter { it.isNotBlank() }
+    .distinctBy { stableKey(it) }
 
 object Rules {
     fun text(value: String, required: Boolean = false): String {
@@ -105,6 +109,15 @@ object Rules {
     fun reuse(data: ShopData) = data.copy(items = data.previous.fold(data.items) { all, item -> add(all, item.copy(id = UUID.randomUUID().toString(), done = false)) })
 
     fun validateShopName(name: String) = text(name, required = true).also { require(it.length >= 2) { "Shop name must contain at least 2 characters." } }
+
+    fun validateCategoryName(name: String) = text(name, required = true).also {
+        require(it.length >= 2) { "Category name must contain at least 2 characters." }
+    }
+
+    fun category(existing: Iterable<String>, name: String): String {
+        val clean = validateCategoryName(name)
+        return existing.firstOrNull { it.trim().equals(clean, ignoreCase = true) } ?: clean
+    }
 
     fun addShop(state: ShoppingState, name: String): ShoppingState {
         val clean = validateShopName(name)

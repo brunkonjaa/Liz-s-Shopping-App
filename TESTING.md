@@ -1,5 +1,10 @@
 # Testing
 
+## Task 4 focused coverage
+
+- `RulesTest` covers case/whitespace-insensitive category reuse, invalid short categories and the distinction between suggested and built-in shops.
+- `ShoppingJourneyTest` exercises product configuration, quantity controls, favourites, shop switching, list isolation and custom item creation. Its assertions still require a fresh Task 4 device run.
+
 ## Current evidence — 2026-10-15
 
 - `./gradlew testDebugUnitTest --no-build-cache` passed. The source and Android test files contain 35 test methods across `RulesTest`, `StorageTest` and `ShoppingJourneyTest`.
@@ -12,4 +17,4 @@ The API 37 emulator remains unverified. Its previous startup/high-CPU issue rema
 
 ## Coverage limits
 
-The connected journey does not cover custom-shop creation, product image selection, v1 database upgrade on a physical target, backup/restore UI error paths, large font sizes, TalkBack, landscape or representative-user behaviour. Task 4 bottom-sheet workflows are also outside this verification pass.
+The connected journey does not cover custom-shop creation, product image selection, v1 database upgrade on a physical target, backup/restore UI error paths, large font sizes, TalkBack, landscape or representative-user behaviour. The new sheet workflows still require a fresh connected-device run and are not claimed verified from compilation alone.

@@ -36,6 +36,12 @@ class RulesTest {
         assertTrue(Catalogue.find("Potatoes")!!.varieties.contains("Kerr's Pink"))
     }
     @Test fun customWeightIsPreserved() { assertEquals("375 g", Rules.checked(Item(name = "Olives", size = "375 g")).size) }
+    @Test fun categoryNamesReuseCaseAndWhitespaceEquivalentValues() {
+        assertEquals("Household cleaning", Rules.category(listOf("Household cleaning"), " household CLEANING "))
+        assertEquals("Pet care", Rules.category(listOf("Household cleaning"), " Pet care "))
+    }
+    @Test(expected = IllegalArgumentException::class) fun shortCategoryRejected() { Rules.validateCategoryName("x") }
+    @Test fun suggestedShopNamesAreDistinctFromBuiltIns() { assertTrue(ShopDefaults.suggestedNames.none { it in ShopDefaults.names }) }
     @Test(expected = IllegalArgumentException::class) fun emptyNameRejected() { Rules.checked(Item(name = " ")) }
     @Test(expected = IllegalArgumentException::class) fun negativeQuantityRejected() { Rules.checked(eggs.copy(quantity = -1)) }
     @Test(expected = IllegalArgumentException::class) fun controlTextRejected() { Rules.checked(eggs.copy(name = "Eggs\nInjected")) }

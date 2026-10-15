@@ -25,8 +25,8 @@ Use JDK 17, Android SDK 37 and the included Gradle wrapper:
 
 On 2026-10-15, unit tests, lint, debug APK assembly and the connected Android journey all passed on the available Samsung SM-A127F running Android 13. The API 37 emulator remains unverified because its previously observed startup/high-CPU issue has not been resolved; see `TESTING.md` for the evidence boundary.
 
-Task 1 repository audit and architecture review are complete. Task 2 catalogue architecture recovery and Task 3 visual redesign are preserved in this branch. Task 4's comprehensive shared bottom-sheet workflows remain pending.
+Task 1 repository audit and architecture review are complete. Task 2 catalogue architecture recovery and Task 3 visual redesign are preserved in this branch. Task 4 adds shared Material 3 bottom sheets for shop selection/creation/management, product configuration and shopping-list options while preserving the Task 3 architecture and offline data model. See `TASK_4_IMPLEMENTATION.md` and `TESTING.md` for the implementation boundary and fresh verification evidence.
 
 ## Scope limits
 
-Task 4's comprehensive shared bottom-sheet workflows, dated purchase history, large-font/TalkBack checks, representative-user checks and release-signing validation remain open. Private visual references and handover notes stay ignored and are not uploaded to GitHub.
+Large-font/TalkBack checks, representative-user checks, screenshot comparison, physical-device persistence verification and release-signing validation remain open until directly executed. Private visual references and handover notes stay ignored and are not uploaded to GitHub.

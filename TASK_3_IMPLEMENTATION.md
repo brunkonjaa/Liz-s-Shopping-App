@@ -13,8 +13,8 @@
 
 ## Not done yet
 
-- The comprehensive shared bottom-sheet workflow remains Task 4.
+- Task 4 now supplies the shared contextual bottom-sheet surface; this document remains the record of the preserved Task 3 editorial UI and navigation boundaries.
 - Recently Bought remains omitted because the current previous-item data is an undated reusable set.
 - Reference photos are not runtime assets; the app uses offline symbols and the bundled generic hero image.
-- Task 2 now supplies stable catalogue/shop identities and durable user image references beneath this UI; Task 4's shared contextual sheets remain separate.
+- Task 2 supplies stable catalogue/shop identities and durable user image references beneath this UI; Task 4 extends those seams without introducing a second navigation architecture.
 - The first performance pass is implemented: the home hero is downsampled and shared across home cards. Cold startup, transitions and catalogue scrolling still need separate follow-up measurements and tuning.

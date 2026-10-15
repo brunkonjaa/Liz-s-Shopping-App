@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -18,6 +21,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,6 +43,34 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LizBottomSheet(
+    title: String,
+    subtitle: String? = null,
+    onDismissRequest: () -> Unit,
+    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        sheetState = sheetState,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 3.dp,
+        dragHandle = { androidx.compose.material3.BottomSheetDefaults.DragHandle(color = MaterialTheme.colorScheme.outline) }
+    ) {
+        Column(
+            Modifier.fillMaxWidth().imePadding().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(title, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+            subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            content()
+        }
+    }
+}
 
 @Composable
 fun EditorialBanner(title: String, subtitle: String, symbol: String, modifier: Modifier = Modifier, accent: Color = MaterialTheme.colorScheme.primary, imagePainter: Painter? = null) {
@@ -101,9 +136,9 @@ fun ShopCard(name: String, data: ShopData, selected: Boolean, onClick: () -> Uni
 }
 
 @Composable
-fun ProductCard(product: Product, onClick: () -> Unit) {
+fun ProductCard(product: Product, onClick: () -> Unit, favourite: Boolean = false, onFavourite: (() -> Unit)? = null) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) { ProductThumbnail(product.symbol); Column(Modifier.weight(1f).padding(horizontal = 14.dp)) { Text(product.name, style = MaterialTheme.typography.titleMedium); Text(product.category, color = MaterialTheme.colorScheme.onSurfaceVariant); Text(product.sizes.firstOrNull().orEmpty(), color = MaterialTheme.colorScheme.secondary) }; Text("+", fontSize = 30.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.semantics { contentDescription = "Add ${product.name}" }) }
+        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) { ProductThumbnail(product.symbol); Column(Modifier.weight(1f).padding(horizontal = 14.dp)) { Text(product.name, style = MaterialTheme.typography.titleMedium); Text(product.category, color = MaterialTheme.colorScheme.onSurfaceVariant); Text(product.sizes.firstOrNull().orEmpty(), color = MaterialTheme.colorScheme.secondary) }; onFavourite?.let { onHeart -> IconButton(onClick = onHeart, modifier = Modifier.semantics { contentDescription = if (favourite) "Remove ${product.name} from favourites" else "Save ${product.name} as favourite" }) { Text(if (favourite) "♥" else "♡", fontSize = 26.sp, color = MaterialTheme.colorScheme.secondary) } }; Text("+", fontSize = 30.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.semantics { contentDescription = "Add ${product.name}" }) }
     }
 }
 

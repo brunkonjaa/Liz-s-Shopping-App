@@ -18,4 +18,9 @@
 - Previous items are a reusable per-shop collection, not dated purchase history.
 - Product sizes are suggestions, not verified stock. There are no prices, cloud features, notifications or online purchasing.
 - The UI currently uses the product symbol/fallback path for most catalogue thumbnails; a broader photographic inventory is outside this recovery task.
-- Comprehensive shared bottom-sheet workflows remain Task 4.
+- Shared Material 3 bottom sheets for changing shops, creating/renaming/removing custom shops, product configuration, shopping options and destructive confirmations.
+- Product editor reuse suggestions, custom category validation, quantity controls, optional notes and immediate catalogue favourite toggles.
+
+## Task 4 verification limits
+
+- Connected-device journey, representative sheet screenshots, persistence after restart, keyboard handling, light/dark inspection and accessibility checks must be reported from fresh runs; they are not established by a successful compile alone.

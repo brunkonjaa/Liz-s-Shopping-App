@@ -14,3 +14,10 @@
 - Unit tests, lint, debug APK assembly and the connected Android journey passed on Samsung SM-A127F / Android 13 after the final Task 2/3 integration edits.
 - The API 37 emulator remains unverified because its previously reported startup/high-CPU issue remains unresolved.
 - Task 1 repository audit and architecture review are complete; Task 4 shared bottom-sheet workflows, dated history, broad accessibility checks and release validation remain open.
+
+## Task 4 shared interactions - 2026-10-15
+
+- Added the reusable `LizBottomSheet` Material 3 surface and consistent shop/options/confirmation sheets.
+- Added change-shop selection, suggested/custom shop creation, rename and guarded removal flows without changing stable shop IDs.
+- Presented the existing product editor in the shared sheet, added catalogue reuse suggestions from the drawer, custom-category validation, optional notes and immediate catalogue favourite toggles.
+- Added focused category and shop-rule tests. Connected-device interaction, screenshots and persistence-after-restart must be recorded separately from compilation and unit-test results.
