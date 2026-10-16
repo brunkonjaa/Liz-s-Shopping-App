@@ -4,7 +4,7 @@ object Catalogue {
     private fun p(name: String, category: String, symbol: String, varieties: String, sizes: String) = Product(
         name, category, symbol, varieties.split('|'), sizes.split('|'),
         imageRef = "builtin:${stableKey(name)}",
-        description = "$category product. Choose from ${varieties.replace('|', ', ')}."
+        description = "$category product. Choose from ${varieties.replace("|", ", ")}."
     )
     val products = listOf(
         p("Milk", "Dairy and eggs", "🥛", "Whole|Low fat|Skimmed|Lactose free|Oat|Soy", "1 L|2 L|3 L"),
