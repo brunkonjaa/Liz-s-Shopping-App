@@ -1,5 +1,17 @@
 # Changelog
 
+## Task 9 performance investigation - 2026-10-16
+
+- Reproduced severe catalogue-scroll jank in five 60-second captures on the Samsung SM-A127F while preserving household data and leaving accessibility settings unchanged.
+- Repeated Compose accessibility traversal hotspots under the enabled service; the service-off comparison and causal attribution remain unverified.
+- Added `docs/TASK9_PERFORMANCE_OPTIMISATION_REPORT.md`. No production optimization was justified from the available evidence; no app behavior or data format changed.
+
+## Task 8 performance audit - 2026-10-16
+
+- Captured five fresh process-cold launch timings and five repeatable catalogue-scroll frame samples on the connected Samsung SM-A127F / Android 13.
+- Perfetto and Simpleperf identified severe app-layer deadline misses and a main-thread Compose accessibility traversal hotspot under the phone's current accessibility-service setup. Attribution outside that setup remains unverified.
+- Added `docs/TASK8_PERFORMANCE_AUDIT.md` with environment details, measured results, confidence boundaries, and conditional Task 9/10 plans. No production, test, Gradle, schema, or device settings were changed; captures remain in the ignored local `verification/task8-performance-audit/` folder.
+
 ## Consolidation - 2026-10-16
 
 - Consolidated the seven current project documents and refreshed all task reports with explicit current versus historical evidence.
