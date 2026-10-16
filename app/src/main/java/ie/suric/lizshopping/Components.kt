@@ -38,6 +38,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -181,7 +182,7 @@ fun ShopCard(shop: Shop, data: ShopData, selected: Boolean, onClick: () -> Unit,
     val name = shop.name
     val itemCount = data.items.count { !it.done }
     val brandSurface = when (shop.id) { "Lidl" -> Color(0xFFE8F0F7); "Aldi" -> Color(0xFFF9F0E4); "Dunnes Stores" -> Color(0xFFEAF3E9); "SuperValu" -> Color(0xFFFBE9E9); else -> MaterialTheme.colorScheme.surface }
-    Card(onClick = onClick, modifier = modifier.semantics { contentDescription = "Select $name shop, $itemCount items" }, shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else brandSurface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
+    Card(onClick = onClick, modifier = modifier.testTag("shop-card-${shop.id}").semantics { contentDescription = "Select $name shop, $itemCount items" }, shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else brandSurface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
         Row(Modifier.fillMaxWidth().heightIn(min = 112.dp).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
             ShopMark(shop, Modifier.size(42.dp))
             Column(Modifier.weight(1f).padding(start = 8.dp)) {
