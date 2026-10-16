@@ -4,7 +4,7 @@ This page describes the current feature set and what has been checked so far. Se
 
 ## Implemented
 
-- Offline shared catalogue with 892 grocery suggestions, stable product identity, categories, descriptions, pictogram thumbnails, varieties, package sizes and optional user image metadata. Research-derived entries are shown under the shop catalogues they came from and are not stock guarantees.
+- Offline shared catalogue with 890 grocery suggestions, stable product identity, categories, descriptions, pictogram thumbnails, varieties, package sizes and optional user image metadata. Research-derived entries are shown under the shop catalogues they came from and are not stock guarantees.
 - Four protected default shops plus persisted custom shops with validated names, rename support and conservative removal safeguards.
 - Shop-scoped catalogue associations, All Items, Favourites, Shopping List and reusable previous items.
 - Catalogue Add adds one package; favourite Add reuses the favourite count. List counts, completion and favourite defaults remain independent. Counts are 1-999, separate from package size.
