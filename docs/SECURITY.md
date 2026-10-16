@@ -13,7 +13,7 @@ This page describes the app's current privacy controls and the checks completed 
 
 ## Verified scope
 
-Task 12's local unit tests, lint and signed Release assembly passed. The packaged manifest adds no permissions. We installed the Release on Android 13, but the connected journey failed at its first shop-card selector and is not counted as a pass. These checks are not a formal security review or certification.
+Release v1.0.0 includes the merged Task 12 work and a follow-up that validates embedded product and shop image data with the image-specific bounds during backup import. Regression tests cover both round trips. The fresh local Release build passed 57 unit tests, lint and signed APK assembly; pull request [run 38852503438](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38852503438) and post-merge [run 38853152931](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38853152931) both passed build/security and Android 13 journey jobs. The packaged manifest adds no permissions. These checks are not a formal security review or certification.
 
 Task 5 diagnostics live only in the test APK. State summaries limit household detail to controlled Bread quantities and counts; screenshots/trees can still contain visible data. Use disposable test state. CI retains selected app/test/SQLite logs on its fresh emulator; phone diagnostic log capture is app-PID limited. Snapshot readback is OPEN_READONLY.
 
