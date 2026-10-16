@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.1 — catalogue expansion (source update in progress)
+
+- Added 818 normalized generic grocery products derived from 820 distinct names in the supplied Lidl Ireland, Aldi, Dunnes Stores and SuperValu catalogues; punctuation variants share IDs and merge their shop associations, bringing the full searchable catalogue to 890 products.
+- Added short product descriptions and small pictogram thumbnails to All Items; research notes populate variety choices where available. Entries are filtered to source shops, but do not guarantee local stock.
+- Added optional product descriptions and research-shop labels to v3 backups while retaining compatibility with existing v1/v2 and earlier v3 backups.
+- Set the next app version to 1.0.1 (versionCode 2). This is not a published release; release signing and APK publication remain pending.
+
 ## v1.0.0 published - 2026-10-16
 
 - Merged Task 12 visual refinement and published [GitHub release v1.0.0](https://github.com/brunkonjaa/Liz-s-Shopping-App/releases/tag/v1.0.0), including the signed APK.

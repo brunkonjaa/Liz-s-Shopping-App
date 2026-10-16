@@ -36,7 +36,9 @@ data class Product(
     val sizes: List<String>,
     val id: String = stableProductId(name, category),
     val imageRef: String? = null,
-    val imageDataBase64: String? = null
+    val imageDataBase64: String? = null,
+    val description: String = "",
+    val researchShops: List<String> = emptyList()
 )
 
 data class Item(

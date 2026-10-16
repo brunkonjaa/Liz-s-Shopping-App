@@ -1,7 +1,11 @@
 package ie.suric.lizshopping
 
 object Catalogue {
-    private fun p(name: String, category: String, symbol: String, varieties: String, sizes: String) = Product(name, category, symbol, varieties.split('|'), sizes.split('|'), imageRef = "builtin:${stableKey(name)}")
+    private fun p(name: String, category: String, symbol: String, varieties: String, sizes: String) = Product(
+        name, category, symbol, varieties.split('|'), sizes.split('|'),
+        imageRef = "builtin:${stableKey(name)}",
+        description = "$category product. Choose from ${varieties.replace("|", ", ")}."
+    )
     val products = listOf(
         p("Milk", "Dairy and eggs", "🥛", "Whole|Low fat|Skimmed|Lactose free|Oat|Soy", "1 L|2 L|3 L"),
         p("Eggs", "Dairy and eggs", "🥚", "Regular|Free Range|Organic", "6 pack|12 pack|18 pack|24 pack"),
@@ -75,7 +79,7 @@ object Catalogue {
         p("Toothbrush", "Toiletries and personal care", "🪥", "Soft|Medium", "1 each|2 pack"),
         p("Pet food", "Other", "🐾", "Cat|Dog|Dry|Wet", "400 g|1 kg|12 pack"),
         p("Batteries", "Other", "🔋", "AA|AAA", "4 pack|8 pack")
-    )
+    ) + ResearchCatalogue.products
     val categories = products.map { it.category }.distinct()
     fun find(name: String) = products.firstOrNull { it.name.equals(name, true) }
     fun symbol(name: String) = find(name)?.symbol ?: "🛍"

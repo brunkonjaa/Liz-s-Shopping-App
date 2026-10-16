@@ -358,7 +358,10 @@ private fun HomePage(modifier: Modifier, state: ShoppingState, onShop: (String) 
 
 @Composable
 private fun AllItemsPage(modifier: Modifier, shop: String, state: ShoppingState, query: String, category: String?, onQuery: (String) -> Unit, onCategory: (String?) -> Unit, onConfigure: (Product) -> Unit, onAdd: (Product) -> Unit, onCustom: () -> Unit, onFavourite: (Product) -> Unit) {
-    val products = state.allProducts().filter { (category == null || it.category == category) && it.name.contains(query.trim(), true) }
+    val products = state.allProducts().filter {
+        (it.researchShops.isEmpty() || shop in it.researchShops) &&
+            (category == null || it.category == category) && it.name.contains(query.trim(), true)
+    }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { EditorialBanner("ALL ITEMS", "Browse products at $shop", "\uD83E\uDD57", accent = MaterialTheme.colorScheme.primary) }
         item { OutlinedTextField(query, onQuery, label = { Text("Search for a product") }, singleLine = true, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) }
