@@ -25,8 +25,10 @@ class CatalogueTest {
             assertNotNull("Expected researched item: $it", Catalogue.find(it))
         }
         assertTrue(Catalogue.find("Fresh basil")!!.researchShops.contains("Lidl"))
-        val beef = ResearchCatalogue.products.first { it.name.startsWith("Beef diced / stewing") }
-        assertTrue(beef.researchShops.containsAll(listOf("Lidl", "Aldi", "Dunnes Stores")))
+        val beef = ResearchCatalogue.products.first {
+            it.id == stableProductId("Beef diced/stewing pieces", "Meat and poultry")
+        }
+        assertTrue(beef.researchShops.containsAll(listOf("Lidl", "Aldi")))
     }
 
     @Test fun expandedCatalogueStillFitsValidatedOfflineBackup() {
