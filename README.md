@@ -40,3 +40,5 @@ Task records: [Task 3 UI](TASK_3_IMPLEMENTATION.md), [Task 4 sheets](TASK_4_IMPL
 The current Task 8 audit records five fresh cold-start measurements and repeatable catalogue-scroll jank on the Samsung SM-A127F. The scroll profile's Compose accessibility traversal hotspot needs matched follow-up because an accessibility service was active during capture. Task 7 figures remain historical; Task 8 did not change production code.
 
 The [Task 9 performance investigation](docs/TASK9_PERFORMANCE_OPTIMISATION_REPORT.md) reproduced severe catalogue-scroll jank in five additional runs with the same accessibility service enabled. Its workload was not identical to Task 8 and no production optimization was justified; the service-off comparison remains open. Task 9 changed documentation only.
+
+The [Task 10 performance isolation report](docs/TASK10_PERFORMANCE_ISOLATION_AND_REMEDIATION_REPORT.md) reviewed the available profiles and catalogue implementation. No disposable Android 13 profiling target was available, so service attribution and matched before/after results remain unverified; no production optimization was justified.

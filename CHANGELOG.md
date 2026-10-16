@@ -1,5 +1,11 @@
 # Changelog
 
+## Task 10 performance isolation - 2026-10-16
+
+- Reviewed the Task 8/9 profiling evidence, catalogue implementation, current Android targets and local performance artifacts. No disposable API 33 target was available for a matched accessibility-service comparison.
+- Confirmed the repeated jank symptom and a Compose semantics traversal hotspot under the enabled service; service causality and optimized performance remain unverified. No production or test code changed; profiling artifacts remain ignored.
+- Added `docs/TASK10_PERFORMANCE_ISOLATION_AND_REMEDIATION_REPORT.md` with the environment limit, existing verification boundary and next recommendation.
+
 ## Task 9 performance investigation - 2026-10-16
 
 - Reproduced severe catalogue-scroll jank in five 60-second captures on the Samsung SM-A127F while preserving household data and leaving accessibility settings unchanged.
