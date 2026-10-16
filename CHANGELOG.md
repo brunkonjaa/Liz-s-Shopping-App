@@ -1,5 +1,12 @@
 # Changelog
 
+## Task 12 visual refinement — 2026-10-16
+
+- Added stable-ID logo mapping for the four default shops across Home, the app bar, shop picker, management and drawer. Custom shops can use an offline image; shops without one show a neutral icon.
+- Added section artwork, improved heading and shop-name wrapping, moved Change Shop below the shop header, and alphabetized All Items.
+- Added Liz's derived portrait to the launcher, Android 12+ splash screen, Home banner and faint app background. The Home banner pairs her portrait with a basket of fruit, vegetables and bread.
+- Added optional custom-shop image metadata to database and backup v3, with explicit v1/v2 migration. The Release build passed 55 unit tests, lint (0 errors) and assembly, and was installed and inspected on Android 13. The connected journey failed at its first shop-card selector. See the [Task 12 report](docs/TASK12_VISUAL_REFINEMENT_REPORT.md) for screenshots and open checks.
+
 ## Task 11 production release - 2026-10-16
 
 - Configured v1.0.0 (`versionCode=1`) as an optimized, resource-shrunk, non-debuggable Release build, with signing credentials supplied from a per-user DPAPI-protected local identity outside the repository.

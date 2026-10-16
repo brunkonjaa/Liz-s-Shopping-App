@@ -42,6 +42,16 @@ class RulesTest {
     }
     @Test(expected = IllegalArgumentException::class) fun shortCategoryRejected() { Rules.validateCategoryName("x") }
     @Test fun suggestedShopNamesAreDistinctFromBuiltIns() { assertTrue(ShopDefaults.suggestedNames.none { it in ShopDefaults.names }) }
+    @Test fun allProductsAreSortedAlphabeticallyWithoutCaseSensitivity() {
+        val names = ShoppingState().allProducts().map { it.name }
+        assertEquals(names.sortedWith(String.CASE_INSENSITIVE_ORDER), names)
+    }
+    @Test fun customShopIdSurvivesRename() {
+        val added = Rules.addShop(ShoppingState(), "Centra")
+        val shop = added.shop("Centra")
+        val renamed = Rules.renameShop(added, shop.id, "Local shop")
+        assertEquals(shop.id, renamed.shop("Local shop").id)
+    }
     @Test(expected = IllegalArgumentException::class) fun emptyNameRejected() { Rules.checked(Item(name = " ")) }
     @Test(expected = IllegalArgumentException::class) fun negativeQuantityRejected() { Rules.checked(eggs.copy(quantity = -1)) }
     @Test(expected = IllegalArgumentException::class) fun controlTextRejected() { Rules.checked(eggs.copy(name = "Eggs\nInjected")) }

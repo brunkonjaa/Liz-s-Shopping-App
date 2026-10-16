@@ -9,6 +9,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -45,16 +46,16 @@ private val DarkLizColors = darkColorScheme(
 )
 
 private val LizTypography = Typography(
-    displayLarge = TextStyle(fontFamily = LizSerif, fontWeight = FontWeight.Bold, fontSize = 52.sp, lineHeight = 52.sp),
-    headlineLarge = TextStyle(fontFamily = LizSerif, fontWeight = FontWeight.Bold, fontSize = 40.sp, lineHeight = 42.sp),
-    headlineMedium = TextStyle(fontFamily = LizSerif, fontWeight = FontWeight.Bold, fontSize = 32.sp, lineHeight = 34.sp),
-    headlineSmall = TextStyle(fontFamily = LizSans, fontWeight = FontWeight.Bold, fontSize = 24.sp),
-    titleLarge = TextStyle(fontFamily = LizSans, fontWeight = FontWeight.Bold, fontSize = 22.sp),
-    titleMedium = TextStyle(fontFamily = LizSans, fontWeight = FontWeight.SemiBold, fontSize = 17.sp),
-    bodyLarge = TextStyle(fontFamily = LizSans, fontSize = 16.sp, lineHeight = 23.sp),
-    bodyMedium = TextStyle(fontFamily = LizSans, fontSize = 14.sp, lineHeight = 20.sp),
-    labelLarge = TextStyle(fontFamily = LizSans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp),
-    labelMedium = TextStyle(fontFamily = LizSans, fontSize = 12.sp)
+    displayLarge = TextStyle(fontFamily = LizSerif, fontWeight = FontWeight.Bold, fontSize = 52.sp, lineHeight = 52.sp, lineBreak = LineBreak.Heading),
+    headlineLarge = TextStyle(fontFamily = LizSerif, fontWeight = FontWeight.Bold, fontSize = 40.sp, lineHeight = 42.sp, lineBreak = LineBreak.Heading),
+    headlineMedium = TextStyle(fontFamily = LizSerif, fontWeight = FontWeight.Bold, fontSize = 32.sp, lineHeight = 34.sp, lineBreak = LineBreak.Heading),
+    headlineSmall = TextStyle(fontFamily = LizSans, fontWeight = FontWeight.Bold, fontSize = 24.sp, lineBreak = LineBreak.Heading),
+    titleLarge = TextStyle(fontFamily = LizSans, fontWeight = FontWeight.Bold, fontSize = 22.sp, lineBreak = LineBreak.Heading),
+    titleMedium = TextStyle(fontFamily = LizSans, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, lineBreak = LineBreak.Heading),
+    bodyLarge = TextStyle(fontFamily = LizSans, fontSize = 16.sp, lineHeight = 23.sp, lineBreak = LineBreak.Paragraph),
+    bodyMedium = TextStyle(fontFamily = LizSans, fontSize = 14.sp, lineHeight = 20.sp, lineBreak = LineBreak.Paragraph),
+    labelLarge = TextStyle(fontFamily = LizSans, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineBreak = LineBreak.Heading),
+    labelMedium = TextStyle(fontFamily = LizSans, fontSize = 12.sp, lineBreak = LineBreak.Heading)
 )
 
 private val LizShapes = Shapes(

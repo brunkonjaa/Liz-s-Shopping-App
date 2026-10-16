@@ -1,4 +1,4 @@
-package ie.suric.lizshopping
+﻿package ie.suric.lizshopping
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -8,6 +8,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -64,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -71,6 +74,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -123,14 +128,12 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
     var editing by remember { mutableStateOf<Editing?>(null) }
     var sheet by remember { mutableStateOf<ActiveSheet?>(null) }
     var selectedImage by remember { mutableStateOf<ImportedImage?>(null) }
+    var selectedShopImage by remember { mutableStateOf<ImportedImage?>(null) }
+    var removeShopLogo by remember { mutableStateOf(false) }
     // Drawer visibility is transient UI state; do not restore an open drawer
     // over the user's shopping list after a process restart.
     val drawerState = remember { DrawerState(DrawerValue.Closed) }
-    var drawerUserOpened by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    LaunchedEffect(drawerState.isOpen, drawerUserOpened) {
-        if (!drawerUserOpened && drawerState.isOpen) drawerState.close()
-    }
     val context = LocalContext.current
     val snack = remember { SnackbarHostState() }
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
@@ -146,39 +149,57 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
             catch (_: Exception) { vm.message.value = "Image could not be used." }
         } }
     }
+    val shopImagePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { selectedUri -> scope.launch {
+            try {
+                selectedShopImage = withContext(Dispatchers.IO) { ImageStore.copyFromUri(context, selectedUri) }
+                removeShopLogo = false
+                vm.message.value = "Shop image ready to save"
+            } catch (_: Exception) { vm.message.value = "Image could not be used." }
+        } }
+    }
     LaunchedEffect(message) { message?.let { snack.showSnackbar(it); vm.message.value = null } }
     val shop = state?.selected
-    fun closeSheet() { sheet = null; selectedImage = null }
+    fun closeSheet() { sheet = null; selectedImage = null; selectedShopImage = null; removeShopLogo = false }
     fun goHome() { choosing = true; settings = false; editing = null; closeSheet(); query = ""; category = null }
     fun closeDrawer(action: () -> Unit) { scope.launch { drawerState.close(); action() } }
     BackHandler(sheet != null || !choosing || settings || editing != null) {
-        when { sheet != null -> sheet = null; editing != null -> editing = null; settings -> settings = false; else -> goHome() }
+        when { sheet != null -> closeSheet(); editing != null -> editing = null; settings -> settings = false; else -> goHome() }
     }
     val s = state
     ModalNavigationDrawer(
         drawerState = drawerState,
         gesturesEnabled = s != null,
         drawerContent = {
-            if (s != null) NavigationDrawerContentV2(s.shopNames(), shop, choosing, tab, themeMode, { closeDrawer(::goHome) }, { selected -> closeDrawer { vm.select(selected); choosing = false; settings = false; tab = 2; query = "" } }, { destination -> closeDrawer { vm.select(s.selected ?: s.shopNames().first()); choosing = false; settings = false; tab = destination; query = "" } }, { closeDrawer { choosing = false; settings = false; editing = Editing(Item(name = ""), null, "custom") } }, { closeDrawer { choosing = false; settings = true } }, onThemeChange)
+            if (s != null) NavigationDrawerContentV2(s.shopDefinitions, shop, choosing, tab, themeMode, { closeDrawer(::goHome) }, { selected -> closeDrawer { vm.select(selected); choosing = false; settings = false; tab = 2; query = "" } }, { destination -> closeDrawer { vm.select(s.selected ?: s.shopNames().first()); choosing = false; settings = false; tab = destination; query = "" } }, { closeDrawer { choosing = false; settings = false; editing = Editing(Item(name = ""), null, "custom") } }, { closeDrawer { choosing = false; settings = true } }, onThemeChange)
         }
     ) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        Image(painterResource(R.drawable.liz_portrait_background), contentDescription = null, modifier = Modifier.align(Alignment.BottomEnd).size(340.dp).alpha(.16f), contentScale = ContentScale.Fit)
         Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
+            containerColor = Color.Transparent,
             snackbarHost = { if (editing == null && sheet == null) SnackbarHost(snack) },
             topBar = {
-                AppTopBarV2(
-                    title = when { settings -> "Settings"; choosing -> "Liz's Shopping List"; editing != null -> editing?.item?.name.orEmpty(); else -> shop.orEmpty() },
-                    onMenu = { drawerUserOpened = true; scope.launch { drawerState.open() } },
-                    onBack = if (settings || editing != null) ({ if (editing != null) editing = null else settings = false }) else null,
-                    onOptions = if (!choosing && !settings && editing == null && sheet == null) ({ sheet = ActiveSheet.Options }) else null,
-                    onSettings = if (choosing) ({ settings = true; choosing = false }) else null
-                )
-                if (!choosing && !settings && editing == null && sheet == null && shop != null) TextButton(onClick = { sheet = ActiveSheet.ChangeShop }, modifier = Modifier.padding(start = 56.dp)) { Text("Change shop ▾") }
+                Column {
+                    AppTopBarV2(
+                        title = when { settings -> "Settings"; choosing -> "Liz's Shopping List"; editing != null -> editing?.item?.name.orEmpty(); else -> shop.orEmpty() },
+                        shopMark = if (!choosing && !settings && editing == null) s?.shopDefinitions?.firstOrNull { it.name == shop } else null,
+                        onMenu = { scope.launch { drawerState.open() } },
+                        onBack = if (settings || editing != null) ({ if (editing != null) editing = null else settings = false }) else null,
+                        onOptions = if (!choosing && !settings && editing == null && sheet == null) ({ sheet = ActiveSheet.Options }) else null,
+                        onSettings = if (choosing) ({ settings = true; choosing = false }) else null
+                    )
+                    if (!choosing && !settings && editing == null && sheet == null && shop != null) {
+                        Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                            androidx.compose.material3.OutlinedButton(onClick = { sheet = ActiveSheet.ChangeShop }, modifier = Modifier.heightIn(min = 48.dp)) { Text("Change shop") }
+                        }
+                    }
+                }
             },
             bottomBar = {
                 if (!choosing && !settings && editing == null && sheet == null && shop != null) NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                     listOf("All Items", "Favourites", "Shopping List").forEachIndexed { index, label ->
-                        NavigationBarItem(selected = tab == index, onClick = { tab = index; query = "" }, icon = { Text(listOf("▦", "♡", "☑")[index], fontSize = 24.sp) }, label = { Text(label) })
+                        NavigationBarItem(selected = tab == index, onClick = { tab = index; query = "" }, icon = { Text(listOf("\u25A6", "\u2661", "\u2611")[index], fontSize = 24.sp) }, label = { Text(label) })
                     }
                 }
             }
@@ -191,9 +212,9 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
                 else -> "shop:${shop}:$tab"
             }
             if (route == "loading" || s == null) {
-                Column(Modifier.padding(padding).padding(24.dp)) { if (loadFailed) Text("Saved data could not be loaded. Open options to restore a backup, or restart the app.") else { CircularProgressIndicator(); Text("Loading saved shopping lists…") } }
+                Column(Modifier.padding(padding).padding(24.dp)) { if (loadFailed) Text("Saved data could not be loaded. Open options to restore a backup, or restart the app.") else { CircularProgressIndicator(); Text("Loading saved shopping lists\u2026") } }
             } else if (route == "settings") {
-                SettingsPageV2(Modifier.padding(padding), s, themeMode, onThemeChange, { sheet = ActiveSheet.AddShop }, { name -> sheet = ActiveSheet.RenameShop(s.shop(name)) }, { name -> sheet = ActiveSheet.RemoveShop(s.shop(name)) })
+                SettingsPageV2(Modifier.padding(padding), s, themeMode, onThemeChange, { sheet = ActiveSheet.AddShop; selectedShopImage = null }, { target -> selectedShopImage = null; removeShopLogo = false; sheet = ActiveSheet.RenameShop(target) }, { name -> sheet = ActiveSheet.RemoveShop(s.shop(name)) })
             } else if (route == "home") {
                 val homeShop = s.selected ?: s.shopNames().first()
                 HomePageV2(Modifier.padding(padding), s, { selected -> vm.select(selected); choosing = false; tab = 0; query = ""; category = null }, { vm.select(homeShop); choosing = false; tab = 1 }, { vm.select(homeShop); choosing = false; tab = 2 }, { vm.select(homeShop); choosing = false; tab = 0 })
@@ -221,6 +242,7 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
             }
         }
     }
+    }
     if (restoreReady) ConfirmSheet(
         "Restore this backup?",
         "This replaces all shopping lists, favourites and custom products. Save a backup first if you want to keep current data.",
@@ -229,11 +251,11 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
     )
     when (val active = sheet) {
         ActiveSheet.ChangeShop -> if (s != null) ChangeShopSheet(s, shop, { selected -> vm.select(selected); choosing = false; closeSheet() }, ::closeSheet)
-        ActiveSheet.AddShop -> if (s != null) AddShopSheet(s.shopNames(), { name ->
+        ActiveSheet.AddShop -> if (s != null) AddShopSheet(s.shopNames(), selectedShopImage, { shopImagePicker.launch(arrayOf("image/png", "image/jpeg", "image/webp")) }, { selectedShopImage = null }, { name, logo ->
             try {
                 val clean = Rules.validateShopName(name)
                 require(s.shopNames().none { it.equals(clean, true) }) { "That shop already exists." }
-                vm.addShop(clean); choosing = true; closeSheet(); null
+                vm.addShop(clean, logo); choosing = true; closeSheet(); null
             } catch (e: IllegalArgumentException) { e.message ?: "Shop name is not valid." }
         }, { dirty -> if (dirty) sheet = ActiveSheet.Confirm("Discard shop name?", "The entered name will be lost.", ::closeSheet) else closeSheet() })
         ActiveSheet.Options -> if (s != null && shop != null) ShoppingOptionsSheet(
@@ -245,11 +267,13 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
             onRestore = { closeSheet(); import.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
             onDismiss = ::closeSheet
         )
-        is ActiveSheet.RenameShop -> RenameShopSheet(active.shop, { name ->
+        is ActiveSheet.RenameShop -> RenameShopSheet(active.shop, selectedShopImage, removeShopLogo, { shopImagePicker.launch(arrayOf("image/png", "image/jpeg", "image/webp")) }, { selectedShopImage = null; removeShopLogo = active.shop.logoImageRef != null }, { selectedShopImage = null; removeShopLogo = true }, { name, logo, removeLogo ->
             try {
                 val clean = Rules.validateShopName(name)
                 require(s!!.shopDefinitions.none { it.id != active.shop.id && it.name.equals(clean, true) }) { "That shop already exists." }
-                vm.renameShop(active.shop.name, clean); closeSheet()
+                vm.renameShop(active.shop.name, clean)
+                if (removeLogo || logo != null) vm.updateShopLogo(active.shop.id, if (removeLogo) null else logo)
+                closeSheet()
             } catch (e: IllegalArgumentException) { vm.message.value = e.message ?: "Shop name is not valid." }
         }, { dirty -> if (dirty) sheet = ActiveSheet.Confirm("Discard shop name?", "The entered name will be lost.", ::closeSheet) else closeSheet() })
         is ActiveSheet.RemoveShop -> RemoveShopSheet(active.shop, { vm.removeShop(active.shop.name); closeSheet() }, ::closeSheet)
@@ -261,17 +285,22 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
 @Composable
 private fun AppTopBar(title: String, onMenu: () -> Unit, onBack: (() -> Unit)?, onOptions: (() -> Unit)?, onSettings: (() -> Unit)?) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (onBack != null) IconButton(onClick = onBack, modifier = Modifier.semantics { contentDescription = "Back" }) { Text("‹", fontSize = 36.sp) } else IconButton(onClick = onMenu, modifier = Modifier.semantics { contentDescription = "Open navigation menu" }) { Text("☰", fontSize = 28.sp) }
+        if (onBack != null) IconButton(onClick = onBack, modifier = Modifier.semantics { contentDescription = "Back" }) { Text("\u2039", fontSize = 36.sp) } else IconButton(onClick = onMenu, modifier = Modifier.semantics { contentDescription = "Open navigation menu" }) { Text("\u2630", fontSize = 28.sp) }
         Text(title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-        if (onOptions != null) IconButton(onClick = onOptions, modifier = Modifier.semantics { contentDescription = "List and backup options" }) { Text("⋮", fontSize = 28.sp) } else Spacer(Modifier.size(48.dp))
+        if (onOptions != null) IconButton(onClick = onOptions, modifier = Modifier.semantics { contentDescription = "List and backup options" }) { Text("\u22EE", fontSize = 28.sp) } else Spacer(Modifier.size(48.dp))
     }
 }
 
 @Composable
-private fun AppTopBarV2(title: String, onMenu: () -> Unit, onBack: (() -> Unit)?, onOptions: (() -> Unit)?, onSettings: (() -> Unit)?) {
+private fun AppTopBarV2(title: String, shopMark: Shop?, onMenu: () -> Unit, onBack: (() -> Unit)?, onOptions: (() -> Unit)?, onSettings: (() -> Unit)?) {
     Row(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         if (onBack != null) IconButton(onClick = onBack, modifier = Modifier.semantics { contentDescription = "Back" }) { Text("\u2039", fontSize = 36.sp) } else IconButton(onClick = onMenu, modifier = Modifier.semantics { contentDescription = "Open navigation menu" }) { Text("\u2630", fontSize = 28.sp) }
-        Text(title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+        if (shopMark != null) {
+            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                ShopMark(shopMark, Modifier.size(42.dp, 34.dp))
+                Text(title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(start = 8.dp), textAlign = TextAlign.Center, maxLines = 2, softWrap = true)
+            }
+        } else Text(title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, maxLines = 2, softWrap = true)
         when {
             onSettings != null -> IconButton(onClick = onSettings, modifier = Modifier.semantics { contentDescription = "Open settings" }) { Text("\u2699", fontSize = 28.sp) }
             onOptions != null -> IconButton(onClick = onOptions, modifier = Modifier.semantics { contentDescription = "List and backup options" }) { Text("\u22ee", fontSize = 28.sp) }
@@ -287,16 +316,30 @@ private fun toggleFavourite(vm: ShoppingViewModel, shop: String, data: ShopData,
 }
 
 @Composable
+private fun HomePortraitBanner() {
+    Box(
+        Modifier.fillMaxWidth().height(196.dp).clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Image(
+            painter = painterResource(R.drawable.hero_home_liz),
+            contentDescription = "Liz",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        )
+    }
+}
+
+@Composable
 private fun HomePageV2(modifier: Modifier, state: ShoppingState, onShop: (String) -> Unit, onFavourites: () -> Unit, onList: () -> Unit, onAllItems: () -> Unit) {
     val current = state.selected ?: state.shopNames().first()
     val data = state.dataFor(current)
-    val heroPainter = painterResource(R.drawable.grocery_hero_small)
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { EditorialBanner("SHOP", "Choose where you're shopping today", "", accent = MaterialTheme.colorScheme.primary, imagePainter = heroPainter) }
-        items(state.shopNames().chunked(2)) { pair -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { pair.forEach { name -> ShopCard(name, state.dataFor(name), state.selected == name, { onShop(name) }, Modifier.weight(1f)) }; if (pair.size == 1) Spacer(Modifier.weight(1f)) } }
-        item { FeatureCard("FAVOURITES", if (data.favourites.isEmpty()) "Build your usual picks" else "${data.favourites.size} usual products", "\u2661", onFavourites, MaterialTheme.colorScheme.secondary, heroPainter) }
-        item { FeatureCard("MY LIST", "View and manage your shopping list", "\u2611", onList, MaterialTheme.colorScheme.primary, heroPainter) }
-        item { FeatureCard("ALL ITEMS", "Browse products by category", "\u25A6", onAllItems, MaterialTheme.colorScheme.tertiary, heroPainter) }
+        item { HomePortraitBanner() }
+        items(state.shopDefinitions.chunked(2)) { pair -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { pair.forEach { item -> ShopCard(item, state.dataFor(item.name), state.selected == item.name, { onShop(item.name) }, Modifier.weight(1f)) }; if (pair.size == 1) Spacer(Modifier.weight(1f)) } }
+        item { FeatureCard("FAVOURITES", if (data.favourites.isEmpty()) "Build your usual picks" else "${data.favourites.size} usual products", "\u2661", onFavourites, MaterialTheme.colorScheme.secondary, painterResource(R.drawable.hero_favourites)) }
+        item { FeatureCard("MY LIST", "View and manage your shopping list", "\u2611", onList, MaterialTheme.colorScheme.primary, painterResource(R.drawable.hero_shopping_list)) }
+        item { FeatureCard("ALL ITEMS", "Browse products by category", "\u25A6", onAllItems, MaterialTheme.colorScheme.tertiary, painterResource(R.drawable.hero_catalogue)) }
     }
 }
 
@@ -305,11 +348,11 @@ private fun HomePage(modifier: Modifier, state: ShoppingState, onShop: (String) 
     val current = state.selected ?: state.shopNames().first()
     val data = state.dataFor(current)
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { EditorialBanner("SHOP", "Choose where you're shopping today", "🛍", accent = MaterialTheme.colorScheme.primary) }
-        items(state.shopNames().chunked(2)) { pair -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { pair.forEach { name -> ShopCard(name, state.dataFor(name), state.selected == name, { onShop(name) }, Modifier.weight(1f)) }; if (pair.size == 1) Spacer(Modifier.weight(1f)) } }
-        item { SectionHeader("FAVOURITES", "See all", onFavourites); Spacer(Modifier.height(8.dp)); Card(onClick = onFavourites, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Text("♡", fontSize = 42.sp, color = MaterialTheme.colorScheme.secondary); Column(Modifier.padding(start = 14.dp)) { Text(if (data.favourites.isEmpty()) "Build your usual picks" else "${data.favourites.size} usual products", style = MaterialTheme.typography.titleLarge); Text("Quickly add your favourites for $current") } } } }
-        item { SectionHeader("MY LIST", "Open list", onList); Spacer(Modifier.height(8.dp)); Card(onClick = onList, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) { Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { Row(verticalAlignment = Alignment.CenterVertically) { Text("Shopping at $current", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f)); Text("☑", fontSize = 28.sp) }; ShoppingProgress(data.items.count { it.done }, data.items.size) } } }
-        item { SectionHeader("ALL ITEMS", "Browse catalogue", onAllItems); Spacer(Modifier.height(8.dp)); Card(onClick = onAllItems, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Text("▦", fontSize = 42.sp, color = MaterialTheme.colorScheme.tertiary); Column(Modifier.padding(start = 14.dp)) { Text("Everyday essentials", style = MaterialTheme.typography.titleLarge); Text("Search ${Catalogue.products.size} reusable products by category") } } } }
+        item { HomePortraitBanner() }
+        items(state.shopDefinitions.chunked(2)) { pair -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { pair.forEach { item -> ShopCard(item, state.dataFor(item.name), state.selected == item.name, { onShop(item.name) }, Modifier.weight(1f)) }; if (pair.size == 1) Spacer(Modifier.weight(1f)) } }
+        item { SectionHeader("FAVOURITES", "See all", onFavourites); Spacer(Modifier.height(8.dp)); Card(onClick = onFavourites, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Text("\u2661", fontSize = 42.sp, color = MaterialTheme.colorScheme.secondary); Column(Modifier.padding(start = 14.dp)) { Text(if (data.favourites.isEmpty()) "Build your usual picks" else "${data.favourites.size} usual products", style = MaterialTheme.typography.titleLarge); Text("Quickly add your favourites for $current") } } } }
+        item { SectionHeader("MY LIST", "Open list", onList); Spacer(Modifier.height(8.dp)); Card(onClick = onList, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) { Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { Row(verticalAlignment = Alignment.CenterVertically) { Text("Shopping at $current", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f)); Text("\u2611", fontSize = 28.sp) }; ShoppingProgress(data.items.count { it.done }, data.items.size) } } }
+        item { SectionHeader("ALL ITEMS", "Browse catalogue", onAllItems); Spacer(Modifier.height(8.dp)); Card(onClick = onAllItems, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Text("\u25A6", fontSize = 42.sp, color = MaterialTheme.colorScheme.tertiary); Column(Modifier.padding(start = 14.dp)) { Text("Everyday essentials", style = MaterialTheme.typography.titleLarge); Text("Search ${Catalogue.products.size} reusable products by category") } } } }
     }
 }
 
@@ -317,7 +360,7 @@ private fun HomePage(modifier: Modifier, state: ShoppingState, onShop: (String) 
 private fun AllItemsPage(modifier: Modifier, shop: String, state: ShoppingState, query: String, category: String?, onQuery: (String) -> Unit, onCategory: (String?) -> Unit, onConfigure: (Product) -> Unit, onAdd: (Product) -> Unit, onCustom: () -> Unit, onFavourite: (Product) -> Unit) {
     val products = state.allProducts().filter { (category == null || it.category == category) && it.name.contains(query.trim(), true) }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { EditorialBanner("ALL ITEMS", "Browse products at $shop", "🥕", accent = MaterialTheme.colorScheme.primary) }
+        item { EditorialBanner("ALL ITEMS", "Browse products at $shop", "\uD83E\uDD57", accent = MaterialTheme.colorScheme.primary) }
         item { OutlinedTextField(query, onQuery, label = { Text("Search for a product") }, singleLine = true, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) }
         item { Text("Categories", style = MaterialTheme.typography.titleMedium); CategoryPicker(category, onCategory) }
         item { Button(onClick = onCustom, modifier = Modifier.fillMaxWidth()) { Text("+ Add custom item") } }
@@ -340,7 +383,7 @@ private fun AllItemsPage(modifier: Modifier, shop: String, state: ShoppingState,
 private fun FavouritesPage(modifier: Modifier, shop: String, data: ShopData, query: String, onQuery: (String) -> Unit, onEdit: (Item) -> Unit, onRemove: (Item) -> Unit, onAdd: (Item) -> Unit) {
     val favourites = data.favourites.filter { it.name.contains(query.trim(), true) }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { EditorialBanner("FAVOURITES", "Your everyday essentials at $shop", "🍅", accent = MaterialTheme.colorScheme.secondary) }
+        item { EditorialBanner("FAVOURITES", "Your everyday essentials at $shop", "\uD83C\uDF45", accent = MaterialTheme.colorScheme.secondary) }
         item { OutlinedTextField(query, onQuery, label = { Text("Search favourites") }, singleLine = true, modifier = Modifier.fillMaxWidth()) }
         if (favourites.isEmpty()) item { EmptyState("No favourites yet", "Save an item with the heart when adding it. Favourites belong to this shop.") }
         items(favourites, key = { it.id }) { item -> FavouriteCard(item, { onAdd(item) }, { onEdit(item) }, { onRemove(item) }) }
@@ -351,7 +394,7 @@ private fun FavouritesPage(modifier: Modifier, shop: String, data: ShopData, que
 private fun ShoppingListPage(modifier: Modifier, shop: String, data: ShopData, onToggle: (Item) -> Unit, onMinus: (Item) -> Unit, onPlus: (Item) -> Unit, onEdit: (Item) -> Unit, onRemove: (Item) -> Unit, onAdd: () -> Unit) {
     val listItems = data.items.sortedBy { it.done }
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { EditorialBanner("MY LIST", "Your shopping list for $shop", "🧺", accent = MaterialTheme.colorScheme.primary) }
+        item { EditorialBanner("MY LIST", "Your shopping list for $shop", "\uD83E\uDDFA", accent = MaterialTheme.colorScheme.primary) }
         item { Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Shopping at $shop", style = MaterialTheme.typography.titleLarge); ShoppingProgress(data.items.count { it.done }, data.items.size) } } }
         item { SectionHeader("Your items") }
         if (listItems.isEmpty()) item { EmptyState("Your shopping list is empty", "Add everyday essentials or choose from your favourites.", "+ Add another item", onAdd) }
@@ -370,16 +413,17 @@ private fun SettingsPage(modifier: Modifier, state: ShoppingState, themeMode: St
     var editingShop by rememberSaveable { mutableStateOf<String?>(null) }
     var draftName by rememberSaveable { mutableStateOf("") }
     var removeTarget by remember { mutableStateOf<String?>(null) }
-    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) { EditorialBanner("SETTINGS", "Make the app feel like yours", "⚙", accent = MaterialTheme.colorScheme.tertiary); Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) { Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Text("Appearance", style = MaterialTheme.typography.titleLarge); Text("Choose how Liz's Shopping List should look.", color = MaterialTheme.colorScheme.onSurfaceVariant); ThemeControls(themeMode, onThemeChange) } }; Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Shops", style = MaterialTheme.typography.titleLarge); Text("Add a local shop without changing the four default shops.", color = MaterialTheme.colorScheme.onSurfaceVariant); Button(onClick = onAddShop, modifier = Modifier.fillMaxWidth()) { Text("+ Add a shop") }; state.shopDefinitions.filterNot { it.builtIn }.forEach { shop -> if (editingShop == shop.id) { OutlinedTextField(draftName, { draftName = it.take(100) }, label = { Text("New name") }, singleLine = true, modifier = Modifier.fillMaxWidth()); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { TextButton(onClick = { onRenameShop(shop.name, draftName); editingShop = null }) { Text("Save name") }; TextButton(onClick = { editingShop = null }) { Text("Cancel") } } } else { Row(verticalAlignment = Alignment.CenterVertically) { Text(shop.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium); TextButton(onClick = { editingShop = shop.id; draftName = shop.name }) { Text("Rename") }; TextButton(onClick = { removeTarget = shop.name }) { Text("Remove") } } } } } }; Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Text("Shopping lists, favourites and product data stay on this device and work offline.", modifier = Modifier.padding(18.dp)) } }
+    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) { EditorialBanner("SETTINGS", "Make the app feel like yours", "\u2699", accent = MaterialTheme.colorScheme.tertiary); Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) { Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Text("Appearance", style = MaterialTheme.typography.titleLarge); Text("Choose how Liz's Shopping List should look.", color = MaterialTheme.colorScheme.onSurfaceVariant); ThemeControls(themeMode, onThemeChange) } }; Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Shops", style = MaterialTheme.typography.titleLarge); Text("Add a local shop without changing the four default shops.", color = MaterialTheme.colorScheme.onSurfaceVariant); Button(onClick = onAddShop, modifier = Modifier.fillMaxWidth()) { Text("+ Add a shop") }; state.shopDefinitions.filterNot { it.builtIn }.forEach { shop -> if (editingShop == shop.id) { OutlinedTextField(draftName, { draftName = it.take(100) }, label = { Text("New name") }, singleLine = true, modifier = Modifier.fillMaxWidth()); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { TextButton(onClick = { onRenameShop(shop.name, draftName); editingShop = null }) { Text("Save name") }; TextButton(onClick = { editingShop = null }) { Text("Cancel") } } } else { Row(verticalAlignment = Alignment.CenterVertically) { Text(shop.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium); TextButton(onClick = { editingShop = shop.id; draftName = shop.name }) { Text("Rename") }; TextButton(onClick = { removeTarget = shop.name }) { Text("Remove") } } } } } }; Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Text("Shopping lists, favourites and product data stay on this device and work offline.", modifier = Modifier.padding(18.dp)) } }
     if (removeTarget != null) AlertDialog(onDismissRequest = { removeTarget = null }, title = { Text("Remove ${removeTarget!!}?") }, text = { Text("A shop can only be removed when its lists and favourites are empty. The four default shops are always kept.") }, confirmButton = { TextButton(onClick = { onRemoveShop(removeTarget!!); removeTarget = null }) { Text("Remove") } }, dismissButton = { TextButton(onClick = { removeTarget = null }) { Text("Cancel") } })
 }
 
 @Composable
-private fun SettingsPageV2(modifier: Modifier, state: ShoppingState, themeMode: String, onThemeChange: (String) -> Unit, onAddShop: () -> Unit, onRenameShop: (String) -> Unit, onRemoveShop: (String) -> Unit) {
+private fun SettingsPageV2(modifier: Modifier, state: ShoppingState, themeMode: String, onThemeChange: (String) -> Unit, onAddShop: () -> Unit, onRenameShop: (Shop) -> Unit, onRemoveShop: (String) -> Unit) {
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        EditorialBanner("SETTINGS", "Make the app feel like yours", "⚙", accent = MaterialTheme.colorScheme.tertiary)
+        EditorialBanner("SETTINGS", "Make the app feel like yours", "\u2699", accent = MaterialTheme.colorScheme.tertiary)
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) { Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Text("Appearance", style = MaterialTheme.typography.titleLarge); Text("Choose how Liz's Shopping List should look.", color = MaterialTheme.colorScheme.onSurfaceVariant); ThemeControls(themeMode, onThemeChange) } }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Shops", style = MaterialTheme.typography.titleLarge); Text("Add a local shop without changing the four default shops.", color = MaterialTheme.colorScheme.onSurfaceVariant); Button(onClick = onAddShop, modifier = Modifier.fillMaxWidth()) { Text("+ Add a shop") }; state.shopDefinitions.filterNot { it.builtIn }.forEach { shop -> Row(verticalAlignment = Alignment.CenterVertically) { Text(shop.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium); TextButton(onClick = { onRenameShop(shop.name) }) { Text("Rename") }; TextButton(onClick = { onRemoveShop(shop.name) }) { Text("Remove") } } } } }
+        EditorialBanner("SHOP MANAGEMENT", "Add a shop and give it a familiar look", "", accent = MaterialTheme.colorScheme.secondary)
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Shops", style = MaterialTheme.typography.titleLarge); Text("Add a local shop without changing the four default shops.", color = MaterialTheme.colorScheme.onSurfaceVariant); Button(onClick = onAddShop, modifier = Modifier.fillMaxWidth()) { Text("+ Add a shop") }; state.shopDefinitions.filterNot { it.builtIn }.forEach { shop -> Row(verticalAlignment = Alignment.CenterVertically) { ShopMark(shop, Modifier.size(48.dp, 40.dp)); Text(shop.name, modifier = Modifier.weight(1f).padding(start = 10.dp), style = MaterialTheme.typography.titleMedium); TextButton(onClick = { onRenameShop(shop) }) { Text("Rename") }; TextButton(onClick = { onRemoveShop(shop.name) }) { Text("Remove") } } } } }
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Text("Shopping lists, favourites and product data stay on this device and work offline.", modifier = Modifier.padding(18.dp)) }
     }
 }
@@ -390,7 +434,7 @@ private fun ThemeControls(themeMode: String, onThemeChange: (String) -> Unit) {
 }
 
 @Composable
-private fun NavigationDrawerContentV2(availableShops: List<String>, selectedShop: String?, choosing: Boolean, tab: Int, themeMode: String, onHome: () -> Unit, onShop: (String) -> Unit, onTab: (Int) -> Unit, onAddProduct: () -> Unit, onSettings: () -> Unit, onThemeChange: (String) -> Unit) {
+private fun NavigationDrawerContentV2(availableShops: List<Shop>, selectedShop: String?, choosing: Boolean, tab: Int, themeMode: String, onHome: () -> Unit, onShop: (String) -> Unit, onTab: (Int) -> Unit, onAddProduct: () -> Unit, onSettings: () -> Unit, onThemeChange: (String) -> Unit) {
     ModalDrawerSheet(modifier = Modifier.widthIn(max = 320.dp), drawerContainerColor = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Liz's Shopping List", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp))
@@ -399,7 +443,7 @@ private fun NavigationDrawerContentV2(availableShops: List<String>, selectedShop
             DrawerItemV2("+", "Add New Product", "Search or create a reusable product", false, onAddProduct)
             DrawerItemV2("\u2302", "Home", "Choose a shop and start shopping", choosing, onHome)
             Text("YOUR SHOPS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(start = 8.dp, top = 12.dp))
-            availableShops.forEach { name -> DrawerItemV2("\u2022", name, "Your $name list", !choosing && selectedShop == name && tab == 2, { onShop(name) }) }
+            availableShops.forEach { shop -> DrawerShopItem(shop, !choosing && selectedShop == shop.name && tab == 2) { onShop(shop.name) } }
             Spacer(Modifier.height(8.dp))
             DrawerItemV2("\u2661", "Favourites", "Your usual products", !choosing && tab == 1, { onTab(1) })
             DrawerItemV2("\u2611", "Current Shopping List", "View, tick off and edit", !choosing && tab == 2, { onTab(2) })
@@ -408,6 +452,15 @@ private fun NavigationDrawerContentV2(availableShops: List<String>, selectedShop
             Text("APPEARANCE", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(start = 8.dp, top = 12.dp))
             ThemeControls(themeMode, onThemeChange)
         }
+    }
+}
+
+@Composable
+private fun DrawerShopItem(shop: Shop, selected: Boolean, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable(onClick = onClick).background(if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface).padding(horizontal = 10.dp, vertical = 8.dp).semantics { contentDescription = "${shop.name}. Your ${shop.name} list" }, verticalAlignment = Alignment.CenterVertically) {
+        ShopMark(shop, Modifier.size(44.dp, 36.dp))
+        Column(Modifier.weight(1f).padding(horizontal = 10.dp)) { Text(shop.name, style = MaterialTheme.typography.titleMedium); Text("Your ${shop.name} list", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        Text("\u203A", fontSize = 26.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -422,7 +475,7 @@ private fun DrawerItemV2(icon: String, title: String, description: String, selec
 
 @Composable
 private fun NavigationDrawerContent(selectedShop: String?, choosing: Boolean, tab: Int, themeMode: String, onHome: () -> Unit, onShop: (String) -> Unit, onTab: (Int) -> Unit, onSettings: () -> Unit, onThemeChange: (String) -> Unit) {
-    ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface) { Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { Text("Liz's Shopping List", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary); Text("A calmer way to shop", color = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(Modifier.height(8.dp)); DrawerItem("⌂", "Home", choosing, onHome, "Choose a shop and start shopping"); Text("YOUR SHOPS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = 12.dp)); shops.forEach { name -> DrawerItem("●", name, !choosing && selectedShop == name && tab == 2, { onShop(name) }, "Your $name list") }; Spacer(Modifier.height(4.dp)); DrawerItem("♡", "Favourites", !choosing && tab == 1, { onTab(1) }, "Your usual products"); DrawerItem("☑", "Current Shopping List", !choosing && tab == 2, { onTab(2) }, "View, tick off and edit"); DrawerItem("▦", "All Items", !choosing && tab == 0, { onTab(0) }, "Browse reusable products"); DrawerItem("⚙", "Settings", false, onSettings, "Appearance and app options"); Text("APPEARANCE", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = 12.dp)); ThemeControls(themeMode, onThemeChange) } }
+    ModalDrawerSheet(drawerContainerColor = MaterialTheme.colorScheme.surface) { Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { Text("Liz's Shopping List", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary); Text("A calmer way to shop", color = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(Modifier.height(8.dp)); DrawerItem("\u2302", "Home", choosing, onHome, "Choose a shop and start shopping"); Text("YOUR SHOPS", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = 12.dp)); shops.forEach { name -> DrawerItem("\u2022", name, !choosing && selectedShop == name && tab == 2, { onShop(name) }, "Your $name list") }; Spacer(Modifier.height(4.dp)); DrawerItem("\u2661", "Favourites", !choosing && tab == 1, { onTab(1) }, "Your usual products"); DrawerItem("\u2611", "Current Shopping List", !choosing && tab == 2, { onTab(2) }, "View, tick off and edit"); DrawerItem("\u25A6", "All Items", !choosing && tab == 0, { onTab(0) }, "Browse reusable products"); DrawerItem("\u2699", "Settings", false, onSettings, "Appearance and app options"); Text("APPEARANCE", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = 12.dp)); ThemeControls(themeMode, onThemeChange) } }
 }
 
 @Composable
@@ -442,14 +495,14 @@ private fun ProductEditor(modifier: Modifier, edit: Editing, catalogue: List<Pro
     var heart by rememberSaveable { mutableStateOf(initialHeart) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
     Column(modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        EditorialBanner(if (edit.mode == "custom") "ADD ITEM" else "CONFIGURE", if (edit.mode == "custom") "Add a custom item to your shopping list" else "Choose the details that work for you", edit.product?.symbol ?: "🛍", accent = MaterialTheme.colorScheme.primary)
+        EditorialBanner(if (edit.mode == "custom") "ADD ITEM" else "CONFIGURE", if (edit.mode == "custom") "Add a custom item to your shopping list" else "Choose the details that work for you", edit.product?.symbol ?: "\uD83D\uDED2", accent = MaterialTheme.colorScheme.primary)
         if (edit.mode == "custom" || Catalogue.find(edit.item.name) == null) {
             OutlinedTextField(name, { name = it.take(100) }, label = { Text("Product name (required)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             if (edit.mode == "custom" && name.trim().isNotEmpty()) {
                 val matches = catalogue.filter { it.name.contains(name.trim(), true) }.take(5)
                 if (matches.isNotEmpty()) {
                     Text("Reuse an existing catalogue product", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    matches.forEach { product -> TextButton(onClick = { reusedProductId = product.id; name = product.name; productCategory = product.category; variety = product.varieties.firstOrNull().orEmpty(); size = product.sizes.firstOrNull().orEmpty() }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("${product.name} · ${product.category}", textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth()) } }
+                    matches.forEach { product -> TextButton(onClick = { reusedProductId = product.id; name = product.name; productCategory = product.category; variety = product.varieties.firstOrNull().orEmpty(); size = product.sizes.firstOrNull().orEmpty() }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("${product.name} \u00B7 ${product.category}", textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth()) } }
                 }
             }
         }
@@ -466,7 +519,7 @@ private fun ProductEditor(modifier: Modifier, edit: Editing, catalogue: List<Pro
         Text("Number of packages", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
         Quantity(qty, { qty = (qty - 1).coerceAtLeast(1) }, { qty = (qty + 1).coerceAtMost(999) }, name)
         Text(if (size.startsWith("Loose")) "For loose items, enter an amount such as 500 g above. Quantity multiplies that amount." else "Size describes one package. Quantity is how many packages to buy.", style = MaterialTheme.typography.bodySmall)
-        if (edit.mode != "favourite") Row(Modifier.fillMaxWidth().clickable { heart = !heart }.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) { androidx.compose.material3.Checkbox(heart, { heart = it }); Text(if (initialHeart) "♥  Favourite saved (usual quantity kept)" else "♥  Save as a favourite for this shop") }
+        if (edit.mode != "favourite") Row(Modifier.fillMaxWidth().clickable { heart = !heart }.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) { androidx.compose.material3.Checkbox(heart, { heart = it }); Text(if (initialHeart) "\u2665  Favourite saved (usual quantity kept)" else "\u2665  Save as a favourite for this shop") }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Button(onClick = { try { onSave(Rules.checked(edit.item.copy(name = name, variety = variety, size = size, quantity = qty, productId = reusedProductId)), productCategory, heart, selectedImage) } catch (e: IllegalArgumentException) { error = e.message } }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), shape = RoundedCornerShape(18.dp), enabled = name.isNotBlank()) { Text(if (edit.mode == "list" || edit.mode == "favourite") "Save changes" else "+ Add to shopping list", fontSize = 18.sp) }
         TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Text("Cancel") }
@@ -475,7 +528,7 @@ private fun ProductEditor(modifier: Modifier, edit: Editing, catalogue: List<Pro
 
 @Composable
 private fun Quantity(value: Int, minus: () -> Unit, plus: () -> Unit, name: String = "item") {
-    Row(verticalAlignment = Alignment.CenterVertically) { IconButton(onClick = minus, enabled = value > 1, modifier = Modifier.size(48.dp).semantics { contentDescription = "Decrease $name quantity" }) { Text("−", fontSize = 24.sp) }; Text("×$value", modifier = Modifier.widthIn(min = 52.dp), fontWeight = FontWeight.Bold, fontSize = 18.sp); IconButton(onClick = plus, enabled = value < 999, modifier = Modifier.size(48.dp).semantics { contentDescription = "Increase $name quantity" }) { Text("+", fontSize = 24.sp) } }
+    Row(verticalAlignment = Alignment.CenterVertically) { IconButton(onClick = minus, enabled = value > 1, modifier = Modifier.size(48.dp).semantics { contentDescription = "Decrease $name quantity" }) { Text("\u2212", fontSize = 24.sp) }; Text("\u00D7$value", modifier = Modifier.widthIn(min = 52.dp), fontWeight = FontWeight.Bold, fontSize = 18.sp); IconButton(onClick = plus, enabled = value < 999, modifier = Modifier.size(48.dp).semantics { contentDescription = "Increase $name quantity" }) { Text("+", fontSize = 24.sp) } }
 }
 
 @OptIn(ExperimentalLayoutApi::class)

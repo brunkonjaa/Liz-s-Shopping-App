@@ -2,6 +2,8 @@
 
 Date: 2026-10-16. Assessment: **CONDITIONALLY READY**. The signed optimized APK installs and launches without Android Studio, completed the core household shopping journey on the target phone, and produced substantially smoother scrolling measurements than the earlier debug build. Release acceptance remains conditional because several management, backup, accessibility and appearance flows were not exercised, and the signing identity has not been backed up off-device.
 
+This report describes the original Task 11 release and its measurements. Task 12 later added visual assets and schema-compatible custom-shop image support, then rebuilt and installed the signed Release. See the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md) for that build's checks; Task 11's performance figures remain historical.
+
 ## 1. Baseline and release configuration
 
 - Dedicated branch: `task11/production-release`.

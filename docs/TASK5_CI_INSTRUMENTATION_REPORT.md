@@ -1,12 +1,14 @@
 # Task 5: CI instrumentation investigation
 
-## Consolidation follow-up - 2026-10-16
+> **Current app status:** Task 12's local Release build and Android 13 visual review passed. Its connected shopping journey failed at the initial Lidl card selector. See the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md) for current evidence. The investigation below records the earlier CI work.
+
+## Historical consolidation follow-up - 2026-10-16
 
 After the CI correction passed, the user explicitly authorized consolidating documents/work and merging into main. PR #3 now targets main and includes all PR #2 commits; Task 5 itself remains test-only relative to starting commit 5d331b8. The main integration therefore also includes the already-existing route/current-state and one-package count changes from PR #2. No additional production change was made for consolidation.
 
 Consolidation head ee734ae passed both jobs in [run 38827147754](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38827147754). Merge review then correctly identified that recreation retains the ViewModel. The test now independently polls the decoded committed SQLite snapshot: first Aldi must commit (a barrier against an older Lidl snapshot), then Lidl must commit with Bread list count 7, favourite count 1 and Aldi list empty. The same readback is required after recreation. A pending/failed final selection can no longer pass using retained optimistic state. No production hook, LocalStore construction, write, fixed sleep or timeout increase is added. The strengthened test APK built in 33s and the direct Samsung run passed: 1 test, 0 failures, 68.805s. Original DB/preferences were verified before testing, restored byte-for-byte afterward, and the app launched. Final-head PR CI is required before merge; main then runs its push workflow.
 
-All current project documents were reconciled. Task 3/4 local notes were retained and refreshed with current verification; older acceptance/performance reports keep dated measurements and explicit supersession notes. The obsolete divergent Task 2 PR is superseded, not merged over the newer catalogue/storage/UI implementation.
+The project documents were reconciled at that point. Task 3/4 notes were retained and refreshed, while older acceptance and performance reports kept their dates and measurements. The divergent Task 2 PR was superseded rather than merged over the newer catalogue, storage and UI implementation.
 
 Original six-file local edits were backed up under ignored verification output and retained in a named pre-consolidation stash. The earlier scrolling-only test is superseded by the verified current test; its original bytes are still preserved. Private root captures/guidance remain in place under ignore rules. The original Task 5 repository-state notes below describe the investigation starting/ending boundary; the later authorized consolidation advances main after checks pass.
 

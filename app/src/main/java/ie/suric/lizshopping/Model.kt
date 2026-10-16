@@ -3,7 +3,13 @@ package ie.suric.lizshopping
 import java.util.Locale
 import java.util.UUID
 
-data class Shop(val id: String, val name: String, val builtIn: Boolean = false)
+data class Shop(
+    val id: String,
+    val name: String,
+    val builtIn: Boolean = false,
+    val logoImageRef: String? = null,
+    val logoImageDataBase64: String? = null
+)
 
 object ShopDefaults {
     val definitions = listOf(
@@ -65,7 +71,9 @@ fun ShoppingState.shop(name: String): Shop = shopDefinitions.firstOrNull { it.na
     ?: error("Unknown shop")
 fun ShoppingState.shopNames(): List<String> = shopDefinitions.map { it.name }
 fun ShoppingState.dataFor(name: String): ShopData = stores[shop(name).id] ?: ShopData()
-fun ShoppingState.allProducts(): List<Product> = (Catalogue.products + custom).distinctBy { it.id }
+fun ShoppingState.allProducts(): List<Product> = (Catalogue.products + custom)
+    .distinctBy { it.id }
+    .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 fun ShoppingState.productFor(item: Item): Product? = allProducts().firstOrNull { it.id == item.productId }
 fun ShoppingState.categories(): List<String> = (Catalogue.categories + custom.map { it.category })
     .filter { it.isNotBlank() }
@@ -149,6 +157,15 @@ object Rules {
         require(state.shopDefinitions.none { it.name.equals(clean, true) }) { "That shop already exists." }
         val shop = Shop("shop:${UUID.randomUUID()}", clean)
         return state.copy(shopDefinitions = state.shopDefinitions + shop, stores = state.stores + (shop.id to ShopData()), selected = clean)
+    }
+
+    fun addShop(state: ShoppingState, name: String, logo: ImportedImage?): ShoppingState {
+        val added = addShop(state, name)
+        if (logo == null) return added
+        val shop = added.shop(name)
+        return added.copy(shopDefinitions = added.shopDefinitions.map {
+            if (it.id == shop.id) it.copy(logoImageRef = logo.reference, logoImageDataBase64 = logo.base64) else it
+        })
     }
 
     fun renameShop(state: ShoppingState, id: String, name: String): ShoppingState {

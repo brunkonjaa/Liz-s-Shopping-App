@@ -16,7 +16,7 @@ import java.util.UUID
 object Backup {
     const val MAX_BYTES = 1_048_576
     private const val FORMAT = "liz-shopping-list"
-    private const val CURRENT_VERSION = 2
+    private const val CURRENT_VERSION = 3
 
     private fun item(i: Item) = JSONObject()
         .put("id", i.id).put("name", i.name).put("variety", i.variety).put("size", i.size)
@@ -30,6 +30,7 @@ object Backup {
         .put("imageRef", p.imageRef ?: JSONObject.NULL).put("imageDataBase64", p.imageDataBase64 ?: JSONObject.NULL)
 
     private fun shop(s: Shop) = JSONObject().put("id", s.id).put("name", s.name).put("builtIn", s.builtIn)
+        .put("logoImageRef", s.logoImageRef ?: JSONObject.NULL).put("logoImageDataBase64", s.logoImageDataBase64 ?: JSONObject.NULL)
 
     fun encode(state: ShoppingState): String {
         val root = JSONObject().put("format", FORMAT).put("version", CURRENT_VERSION)
@@ -116,7 +117,9 @@ object Backup {
         require(a.length() in ShopDefaults.definitions.size..2000)
         val result = (0 until a.length()).map { n ->
             val o = a.getJSONObject(n)
-            Shop(string(o, "id", true), Rules.validateShopName(string(o, "name", true)), o.optBoolean("builtIn", false))
+            val logoRef = nullableString(o, "logoImageRef")?.also { validateImageRef(it) }
+            val logoData = nullableString(o, "logoImageDataBase64")?.also { validateImageData(it) }
+            Shop(string(o, "id", true), Rules.validateShopName(string(o, "name", true)), o.optBoolean("builtIn", false), logoRef, logoData)
         }
         require(result.map { it.id }.distinct().size == result.size)
         require(result.map { it.name.lowercase() }.distinct().size == result.size)
@@ -175,7 +178,7 @@ object Backup {
     }
 
     private fun decodeV2(o: JSONObject): ShoppingState {
-        require(o.get("version") == CURRENT_VERSION && o.getString("format") == FORMAT) { "Unsupported backup format." }
+        require(o.getInt("version") in 2..CURRENT_VERSION && o.getString("format") == FORMAT) { "Unsupported backup format." }
         require(!o.has("selected")) { "Unsupported backup field." }
         val definitions = readShopDefinitions(o.getJSONArray("shops"))
         val products = readProducts(o.getJSONArray("products"))
@@ -197,7 +200,7 @@ object Backup {
         val o = JSONObject(raw)
         return when (o.getInt("version")) {
             1 -> decodeV1(o)
-            CURRENT_VERSION -> decodeV2(o)
+            in 2..CURRENT_VERSION -> decodeV2(o)
             else -> throw IllegalArgumentException("Unsupported backup format.")
         }
     }
@@ -216,7 +219,7 @@ class LocalStore(context: Context, name: String = "shopping.db") : SQLiteOpenHel
     override fun onCreate(db: SQLiteDatabase) { db.execSQL("CREATE TABLE state (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL)") }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        require(oldVersion == 1 && newVersion == DATABASE_VERSION) { "Unsupported database migration $oldVersion->$newVersion" }
+        require(oldVersion in 1..2 && newVersion == DATABASE_VERSION) { "Unsupported database migration $oldVersion->$newVersion" }
         db.rawQuery("SELECT payload FROM state WHERE id=1", null).use { cursor ->
             if (!cursor.moveToFirst()) return
             val migrated = Backup.encode(Backup.decode(cursor.getString(0)))
@@ -236,7 +239,7 @@ class LocalStore(context: Context, name: String = "shopping.db") : SQLiteOpenHel
         } finally { db.endTransaction() }
     }
 
-    companion object { const val DATABASE_VERSION = 2 }
+    companion object { const val DATABASE_VERSION = 3 }
 }
 
 data class ImportedImage(val reference: String, val base64: String)

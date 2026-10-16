@@ -86,6 +86,55 @@ class StorageTest {
         assertEquals(product.id, restored.dataFor("Lidl").items.single().productId)
     }
 
+    @Test fun shopLogoSurvivesBackupRoundTrip() {
+        val logo = ImportedImage("centra-logo.webp", Base64.getEncoder().encodeToString(byteArrayOf(1, 2, 3)))
+        val state = Rules.addShop(ShoppingState(), "Centra", logo)
+        val restored = Backup.decode(Backup.encode(state))
+        assertEquals("Centra", restored.shop("Centra").name)
+        assertEquals(logo.reference, restored.shop("Centra").logoImageRef)
+        assertEquals(logo.base64, restored.shop("Centra").logoImageDataBase64)
+    }
+
+    @Test fun versionTwoBackupWithoutShopImagesStillLoads() {
+        val v2 = JSONObject(Backup.encode(sample())).put("version", 2)
+        val shops = v2.getJSONArray("shops")
+        for (index in 0 until shops.length()) {
+            shops.getJSONObject(index).remove("logoImageRef")
+            shops.getJSONObject(index).remove("logoImageDataBase64")
+        }
+        val restored = Backup.decode(v2.toString())
+        assertEquals(sample().dataFor("Lidl").items, restored.dataFor("Lidl").items)
+        assertNull(restored.shop("Lidl").logoImageRef)
+    }
+
+    @Test fun sqliteVersionTwoMigratesWithoutLosingListsOrCustomShop() {
+        val app = RuntimeEnvironment.getApplication()
+        val name = "v2-${System.nanoTime()}.db"
+        val logo = ImportedImage("local-logo.webp", Base64.getEncoder().encodeToString(byteArrayOf(4, 5, 6)))
+        val state = Rules.addShop(ShoppingState(selected = "Lidl", stores = ShoppingState().stores + ("Lidl" to ShopData(items = listOf(item)))), "Local shop", logo)
+        val oldPayload = JSONObject(Backup.encode(state)).put("version", 2).also { root ->
+            val shops = root.getJSONArray("shops")
+            for (index in 0 until shops.length()) {
+                shops.getJSONObject(index).remove("logoImageRef")
+                shops.getJSONObject(index).remove("logoImageDataBase64")
+            }
+        }.toString()
+        try {
+            app.openOrCreateDatabase(name, SQLiteDatabase.CREATE_IF_NECESSARY, null).use { db ->
+                db.execSQL("CREATE TABLE state (id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL)")
+                db.execSQL("INSERT INTO state(id, payload) VALUES(1, ?)", arrayOf(oldPayload))
+                db.version = 2
+            }
+            LocalStore(app, name).use { store ->
+                val migrated = store.load()
+                assertEquals(item, migrated.dataFor("Lidl").items.single())
+                assertEquals("Local shop", migrated.shop("Local shop").name)
+                assertNull(migrated.shop("Local shop").logoImageRef)
+            }
+            app.openOrCreateDatabase(name, SQLiteDatabase.CREATE_IF_NECESSARY, null).use { db -> assertEquals(3, db.version) }
+        } finally { app.deleteDatabase(name) }
+    }
+
     @Test(expected = IllegalArgumentException::class) fun unsafeImageReferenceRejected() {
         val product = Product("Unsafe", "Other", "🛍", listOf(""), listOf(""), "custom:unsafe", "../outside")
         Backup.decode(Backup.encode(ShoppingState(custom = listOf(product))))

@@ -1,0 +1,7 @@
+<resources>
+    <style name="AppTheme" parent="@style/LizAppBaseTheme">
+        <item name="android:windowSplashScreenBackground">@color/liz_launcher_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/liz_launcher_foreground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/liz_launcher_background</item>
+    </style>
+</resources>

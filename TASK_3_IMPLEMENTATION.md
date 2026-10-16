@@ -2,7 +2,7 @@
 
 ## Current status - 2026-10-16
 
-This records the preserved Task 3 design. Task 4 supplies contextual sheets; later commits supply direct Add/current-state routing. Private visual references remain local and ignored. Current verification supersedes the earlier pending-check note without changing historical design scope.
+Task 3 established the app's warm editorial design and navigation. Task 4 later added contextual sheets, and follow-up work added direct Add and current-state routing. Private visual references remain local. Current results are in [TESTING.md](TESTING.md) and the [Task 12 report](docs/TASK12_VISUAL_REFINEMENT_REPORT.md); they do not change the scope of this historical design record.
 
 ## Done
 
@@ -13,7 +13,7 @@ This records the preserved Task 3 design. Task 4 supplies contextual sheets; lat
 - Added the modal drawer for home, shops, favourites, current list, all items, settings and appearance controls.
 - Redesigned catalogue search, category chips, favourites and shopping list while preserving ViewModel operations, quantity rules, shop isolation and offline storage.
 - Kept accessible labels and state descriptions for navigation, quantities and completion toggles.
-- The Task 3 implementation is preserved. Current lint, APK, unit and Android 13 phone/CI journey checks passed on implementation 265b941; see [TESTING.md](TESTING.md). This verifies exercised interactions, not complete visual-reference fidelity or accessibility.
+- The Task 3 implementation remains part of the app. The implementation `265b941` passed the then-current lint, APK, unit and Android 13 phone/CI checks; see [TESTING.md](TESTING.md) for newer results. Those checks covered exercised interactions, not full visual-reference fidelity or accessibility.
 
 ## Not done yet
 

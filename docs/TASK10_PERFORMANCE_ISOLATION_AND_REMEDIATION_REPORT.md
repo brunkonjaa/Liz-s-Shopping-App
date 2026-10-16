@@ -2,6 +2,8 @@
 
 Date: 2026-10-16. Scope: inspect the Task 8/9 evidence, check for a safe disposable comparison target, review the catalogue rendering path and record the strongest supported conclusion. No production or test code, device settings, household data, schema, dependency or permissions were changed. Profiling artifacts remain local under the ignored `verification/` directory.
 
+Task 10's service comparison remained unverified because no disposable Android 13 profiling target was available. Task 11 later recorded Release measurements; Task 12 added visual and storage changes and has its own current test results in [TESTING.md](../TESTING.md). Neither report changes the historical conditions recorded below.
+
 ## 1. Repository baseline
 
 - Task 10 branch: `task10/performance-isolation-remediation`.
