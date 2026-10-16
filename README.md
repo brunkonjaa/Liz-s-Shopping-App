@@ -4,7 +4,7 @@ A native Kotlin and Jetpack Compose grocery list for Lidl, Aldi, Dunnes Stores a
 
 ## Current implementation
 
-- A shared offline catalogue of 892 grocery suggestions, with stable product IDs, short descriptions, food pictograms, varieties and package sizes. Range and availability vary by shop and week.
+- A shared offline catalogue of 890 grocery suggestions, with stable product IDs, short descriptions, food pictograms, varieties and package sizes. Range and availability vary by shop and week.
 - Separate lists, favourites and previous items for each shop.
 - Four protected default shops, plus custom shops with validated names and optional logos.
 - Catalogue Add adds one package, using a saved variety and size when available. Favourite Add uses its saved count. Editing a list item does not change its favourite default. Package size and package count are separate; counts range from 1 to 999.
@@ -16,7 +16,7 @@ A native Kotlin and Jetpack Compose grocery list for Lidl, Aldi, Dunnes Stores a
 
 ## Current source state - 2026-10-16
 
-Version 1.0.1 expands All Items with 820 generic product entries parsed and deduplicated from the supplied Lidl Ireland, Aldi Ireland, Dunnes Stores and SuperValu research catalogues. Entries appear under the shop catalogue(s) they were researched for, use small pictogram thumbnails and short descriptions, and use supplied variety notes as selectable options where available. They are suggestions, not verified Kilkenny store stock. Release v1.0.0 remains the latest published signed APK until this source change is built with the existing signing identity and published.
+Version 1.0.1 expands All Items with 818 normalized product records derived from 820 distinct names in the supplied Lidl Ireland, Aldi Ireland, Dunnes Stores and SuperValu research catalogues. Two punctuation variants share product IDs and their shop associations are combined. Entries appear under the shop catalogue(s) they were researched for, use small pictogram thumbnails and short descriptions, and use supplied variety notes as selectable options where available. They are suggestions, not verified Kilkenny store stock. Release v1.0.0 remains the latest published signed APK until this source change is built with the existing signing identity and published.
 
 ## Verified release state - 2026-10-16
 
