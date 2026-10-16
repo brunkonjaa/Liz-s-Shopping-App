@@ -179,13 +179,14 @@ fun ShopMark(shop: Shop, modifier: Modifier = Modifier) {
 @Composable
 fun ShopCard(shop: Shop, data: ShopData, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val name = shop.name
+    val itemCount = data.items.count { !it.done }
     val brandSurface = when (shop.id) { "Lidl" -> Color(0xFFE8F0F7); "Aldi" -> Color(0xFFF9F0E4); "Dunnes Stores" -> Color(0xFFEAF3E9); "SuperValu" -> Color(0xFFFBE9E9); else -> MaterialTheme.colorScheme.surface }
-    Card(onClick = onClick, modifier = modifier, shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else brandSurface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
+    Card(onClick = onClick, modifier = modifier.semantics { contentDescription = "Select $name shop, $itemCount items" }, shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else brandSurface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
         Row(Modifier.fillMaxWidth().heightIn(min = 112.dp).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
             ShopMark(shop, Modifier.size(42.dp))
             Column(Modifier.weight(1f).padding(start = 8.dp)) {
                 Text(name, style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text("${data.items.count { !it.done }} items", color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, softWrap = false)
+                Text("$itemCount items", color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, softWrap = false)
             }
             Text("\u203A", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface)
         }

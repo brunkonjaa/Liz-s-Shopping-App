@@ -90,7 +90,7 @@ class ShoppingJourneyTest {
             })
         closeDrawerIfOpen()
         if (current.selected == null) {
-            rule.onNode(hasText("Lidl") and hasText("0 items") and hasClickAction())
+            rule.onNodeWithContentDescription("Select Lidl shop, 0 items")
                 .performScrollTo().assertIsDisplayed().performClick()
         } else if (current.selected != "Lidl") {
             rule.onNodeWithText("Change shop ▾").assertIsDisplayed().performClick()
