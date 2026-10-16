@@ -89,13 +89,22 @@ class ShoppingJourneyTest {
                 it.items.isEmpty() && it.favourites.isEmpty() && it.previous.isEmpty()
             })
         closeDrawerIfOpen()
-        if (current.selected == null) {
-            rule.onNodeWithTag("shop-card-Lidl")
-                .performScrollTo().assertIsDisplayed().performClick()
-        } else if (current.selected != "Lidl") {
-            rule.onNodeWithText("Change shop ▾").assertIsDisplayed().performClick()
-            rule.onNodeWithContentDescription("Select Lidl shop").assertIsDisplayed().performClick()
+        // Returning installations open the previously selected shop's list,
+        // while first-use installations open Home. Take the same UI route in
+        // either state before locating the shop card.
+        rule.onNodeWithContentDescription("Open navigation menu").performClick()
+        rule.onNodeWithContentDescription("Home. Choose a shop and start shopping")
+            .assertIsDisplayed().performClick()
+        val lidlCard = rule.onNodeWithTag("shop-card-Lidl")
+        try {
+            rule.waitUntil(STATE_TIMEOUT_MS) {
+                rule.onAllNodesWithTag("shop-card-Lidl").fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (error: Throwable) {
+            captureDiagnostics("lidl-card-timeout", error)
+            throw error
         }
+        lidlCard.performScrollTo().assertIsDisplayed().assertIsEnabled().performClick()
         waitForText("Shopping List")
         openTab("Shopping List")
         waitForText("Your shopping list for Lidl")
@@ -286,14 +295,14 @@ class ShoppingJourneyTest {
         rule.onNodeWithText("×7").assertExists()
 
         // Switching shops keeps the lists independent.
-        rule.onNodeWithText("Change shop ▾").performClick()
+        rule.onNodeWithText("Change shop").performClick()
         rule.onNodeWithContentDescription("Select Aldi shop").performClick()
         waitForText("Your shopping list for Aldi")
         rule.onNodeWithText("Bread").assertDoesNotExist()
         // Commit Aldi first so a later Lidl read cannot match an older Lidl
         // snapshot while the final selection write is pending or has failed.
         waitForPersistedShop("Aldi")
-        rule.onNodeWithText("Change shop ▾").performClick()
+        rule.onNodeWithText("Change shop").performClick()
         rule.onNodeWithContentDescription("Select Lidl shop").performClick()
         waitForText("Your shopping list for Lidl")
         rule.onNodeWithText("Bread").assertExists()

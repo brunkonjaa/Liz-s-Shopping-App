@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-16<br>
 **Branch:** `task12/visual-refinement`<br>
-**Result:** Local checks and the Android 13 visual review passed; the connected journey and API 37 run remain open.
+**Result:** Local checks, the Android 13 visual review and the corrected connected journey passed on Samsung SM-A127F. The hosted API 33 workflow and API 37 instrumentation remain open.
 
 ## Result
 
@@ -27,9 +27,9 @@ These screenshots were captured from the signed Release app on the Samsung SM-A1
 
 - `scripts/build-release.ps1` ran `clean testDebugUnitTest lintDebug assembleRelease --console=plain`: **BUILD SUCCESSFUL**. RulesTest: 36/36; StorageTest: 19/19; total: 55 passing. Lint: 0 errors, 16 warnings. The signed, optimized Release APK assembled.
 - Installed and launched Release on SM-A127F / Android 13. A cold-launch screenshot showed Liz on the system splash; Home showed the portrait-and-basket composition. Home cards, drawer and Settings were rendered at 720x1600, density override 280 and font scale 1.1. `SHOP MANAGEMENT` wraps between words and keeps `MANAGEMENT` intact. All Items visibly begins Apples, then Bacon.
-- The connected instrumentation journey was attempted. First attempt stopped before tests because the installed Release and test Debug signatures differ. After removing the app and installing the test build, one test ran and failed at `ShoppingJourneyTest.startAtLidl` line 94 because its selector could not find the clickable combined `Lidl` / `0 items` shop card. No further Debug build was installed; the signed Release was reinstalled and launched afterward.
-- API 37 emulator execution remains unverified; the disposable AVD did not come online. Backup/restore UI, custom image picker, dark mode, TalkBack, large-font and landscape coverage also remain unverified.
+- The first connected journey attempt stopped before tests because the installed Release and test Debug signatures differ. After removing the Release and installing the test build, the journey exposed stale navigation assumptions: returning installations open the selected shop list, not Home, and the current shop button is labelled `Change shop` without the earlier arrow. The test now navigates through the drawer to Home, selects Lidl by its stable shop-card tag, and uses the current button label. The full journey passed on Samsung SM-A127F / Android 13: 1 test, 0 failures, 83.787 seconds, including committed SQLite readback after shop switching and recreation. The phone data was disposable test data and was reset for this run.
+- A local API 37 emulator attempt failed before test execution because Espresso could not reflectively find `InputManager.getInstance()` on API 37. API 37 instrumentation remains unverified. The hosted API 33 workflow is pending. Backup/restore UI, custom image picker, dark mode, TalkBack, large-font and landscape coverage also remain unverified.
 
 ## Artifacts and acceptance
 
-The Release APK is generated at `app/build/outputs/apk/release/app-release.apk` and remains ignored by Git. The two selected shop-logo screenshots are included under `docs/images/task12-shop-logos/`; raw captures remain local. Task 12 is **CONDITIONAL**: local tests, lint, Release assembly and the Android 13 visual review passed, while the connected journey and API 37 execution remain open.
+The Release APK is generated at `app/build/outputs/apk/release/app-release.apk` and remains ignored by Git. The two selected shop-logo screenshots are included under `docs/images/task12-shop-logos/`; raw captures remain local. Task 12 is **CONDITIONAL**: local tests, lint, Release assembly, Android 13 visual review and the corrected phone journey passed; the hosted API 33 workflow, API 37 instrumentation and listed coverage areas remain open.
