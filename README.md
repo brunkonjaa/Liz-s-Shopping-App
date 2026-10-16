@@ -16,6 +16,8 @@ A native Kotlin and Jetpack Compose grocery-list app for Lidl, Aldi, Dunnes Stor
 
 Implementation `265b941` passed 50 unit tests, lint (0 errors, 13 existing warnings), debug/test APK assembly, packaged-security checks, three current Samsung Android 13 journey runs and [GitHub Android 13 Pixel 2 instrumentation](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38825384833). Failed and successful CI artifacts were inspected. The test now accounts for off-screen controls and transient snackbar coverage without sleeps, weaker outcomes or production changes for Task 5.
 
+Review also strengthens the journey with independent committed SQLite assertions: Aldi must persist before returning to Lidl, which must persist with list count 7 and favourite count 1. Activity recreation alone retains the ViewModel and is not a persistence proof. This strengthened test passed on Samsung in 68.805s; the final PR head must pass CI before merging.
+
 This consolidation brings the later state/count fixes and the verified test/documents together on the main integration path. It does not certify untested backup/restore UI, accessibility, reboot/update persistence, all sheet/custom-image flows or API 37 runtime compatibility. See [TESTING.md](TESTING.md) for current evidence and limits.
 
 ## Build

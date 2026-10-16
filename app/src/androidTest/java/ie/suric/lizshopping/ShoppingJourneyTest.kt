@@ -1,5 +1,6 @@
 package ie.suric.lizshopping
 
+import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import android.view.inputmethod.InputMethodManager
 import androidx.lifecycle.ViewModelProvider
@@ -116,6 +117,29 @@ class ShoppingJourneyTest {
         } catch (error: Throwable) {
             diagnostics.stopTrace()
             captureDiagnostics("bread-$expected-timeout", error)
+            throw error
+        }
+    }
+
+    private fun waitForPersistedShop(expected: String) {
+        try {
+            rule.waitUntil(STATE_TIMEOUT_MS) {
+                // Independent committed readback, without constructing LocalStore
+                // or relying on the ViewModel retained by activity recreation.
+                val path = rule.activity.getDatabasePath("shopping.db")
+                val saved = SQLiteDatabase.openDatabase(path.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+                    db.rawQuery("SELECT payload FROM state WHERE id=1", null).use { cursor ->
+                        if (cursor.moveToFirst()) Backup.decode(cursor.getString(0)) else null
+                    }
+                } ?: return@waitUntil false
+                val lidl = saved.dataFor("Lidl")
+                saved.selected == expected &&
+                    lidl.items.singleOrNull { it.name.equals("Bread", true) }?.quantity == 7 &&
+                    lidl.favourites.singleOrNull { it.name.equals("Bread", true) }?.quantity == 1 &&
+                    saved.dataFor("Aldi").items.isEmpty()
+            }
+        } catch (error: Throwable) {
+            captureDiagnostics("persisted-$expected-timeout", error)
             throw error
         }
     }
@@ -266,10 +290,14 @@ class ShoppingJourneyTest {
         rule.onNodeWithContentDescription("Select Aldi shop").performClick()
         waitForText("Your shopping list for Aldi")
         rule.onNodeWithText("Bread").assertDoesNotExist()
+        // Commit Aldi first so a later Lidl read cannot match an older Lidl
+        // snapshot while the final selection write is pending or has failed.
+        waitForPersistedShop("Aldi")
         rule.onNodeWithText("Change shop ▾").performClick()
         rule.onNodeWithContentDescription("Select Lidl shop").performClick()
         waitForText("Your shopping list for Lidl")
         rule.onNodeWithText("Bread").assertExists()
+        waitForPersistedShop("Lidl")
 
         // The current shop reopens directly into its list after recreation.
         rule.activityRule.scenario.recreate()
@@ -277,6 +305,7 @@ class ShoppingJourneyTest {
         waitForBreadQuantity(7)
         rule.onNodeWithText("Bread").assertExists()
         rule.onNodeWithText("×7").assertExists()
+        waitForPersistedShop("Lidl")
         captureDiagnostics("journey-final")
     }
 }

@@ -2,7 +2,7 @@
 
 ## Current verified implementation - 2026-10-16
 
-Source revision `265b941` is the current app/journey implementation; subsequent consolidation edits update documentation and ignore rules. [GitHub run 38825384833](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38825384833) passed both build/security and API 33 x86_64 Pixel 2 instrumentation. The consolidated PR is checked again before merge, and main's push workflow checks the resulting integration.
+Implementation baseline `265b941` passed the phone/CI checks below. Documentation consolidation `ee734ae` also passed both jobs in [run 38827147754](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38827147754). A subsequent review strengthens the journey with committed-database assertions for shop selection and independent quantities; this changes only androidTest, with separate verification recorded below. [GitHub run 38825384833](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38825384833) passed both build/security and API 33 x86_64 Pixel 2 instrumentation. The consolidated PR is checked again before merge, and main's push workflow checks the resulting integration.
 
 | Check | Observed evidence |
 | --- | --- |
@@ -13,6 +13,7 @@ Source revision `265b941` is the current app/journey implementation; subsequent 
 | Current Samsung direct journey | 2/2 passed: fresh home 69.295s; saved empty Aldi startup 68.745s. |
 | Current Samsung Gradle journey | 1 test, 0 failures/errors; XML duration 80.184s; command 1m 58s. Gradle retained 78 diagnostic files. |
 | GitHub Android 13 journey | 1 test, 0 failures/errors; testcase 25.391s. Same Pixel 2/API 33/x86_64/display/graphics settings as failed runs. |
+| Review-strengthened Samsung journey | Passed: 1 test, 0 failures, 68.805s with committed Aldi/Lidl and quantity readback assertions. Original DB/preferences restored byte-for-byte; app launched. |
 | Diagnostics and data guard | Controlled quantity-timeout probe retained valid PNG/XML, full semantics, state/logs and original stack. Existing-data probe refused a non-empty fixture and left database bytes unchanged. |
 | Phone preservation | Original DB/preferences restored and byte-verified again after final installation, launch and UI inspection. Four default shops each show zero items, matching preflight state. |
 
@@ -31,7 +32,7 @@ Set `ANDROID_SERIAL` when multiple targets exist. Use a disposable empty install
 
 The journey loads state, explicitly selects Lidl, selects actual Tab-role navigation, searches/replaces Bread text and uses current catalogue/favourite/list controls. Content actions scroll into view and require displayed/enabled state. It waits for the Material snackbar's Polite/Dismiss semantics to disappear before card interaction, with no fixed sleeps or increased state timeout.
 
-It checks first/second Add counts 1/2, five increments and one decrement to 6, completion both ways, favourite default 1, favourite reuse to 7, Aldi isolation, return to Lidl and quantity 7 after activity recreation. It does not substitute a direct ViewModel call for UI interaction.
+It checks first/second Add counts 1/2, five increments and one decrement to 6, completion both ways, favourite default 1, favourite reuse to 7, Aldi isolation, return to Lidl and quantity 7 after activity recreation. Independent read-only SQLite assertions require committed Aldi before returning to Lidl, then committed Lidl with list count 7, favourite count 1 and an empty Aldi list before/after recreation. The Aldi write barrier prevents an older Lidl snapshot satisfying the final assertion while a save is pending or has failed. Activity recreation retains the ViewModel; these database assertions, rather than recreation alone, establish committed selection/quantity state. It does not substitute a direct ViewModel call for UI interaction.
 
 ## CI diagnosis and artifacts
 
