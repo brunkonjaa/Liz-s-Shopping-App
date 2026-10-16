@@ -1,6 +1,10 @@
 # Testing
 
-## Task 12 checks - 2026-10-16
+## Current release verification - 2026-10-16
+
+Release v1.0.0 is published from the merged Task 12 work. A follow-up fixed backup decoding for image data longer than the ordinary text-field limit and added product-image and shop-logo round-trip regression tests. A fresh `scripts/build-release.ps1` run completed `clean testDebugUnitTest lintDebug assembleRelease`: 57 unit tests passed, lint completed and the signed Release APK assembled. Pull request [run 38852503438](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38852503438) and post-merge `main` [run 38853152931](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38853152931) both passed build/security and Android 13 journey jobs. The connected Samsung SM-A127F / Android 13 journey and visual review are recorded in the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md). This does not verify every flow or device; the open areas below remain open.
+
+## Initial Task 12 checks - 2026-10-16
 
 The local Release build passed 55 unit tests, lint (0 errors, 16 warnings) and signed Release assembly. We installed and launched it on a Samsung SM-A127F running Android 13, then inspected Home, shop cards, the drawer and Settings. The screenshots appear in the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md).
 

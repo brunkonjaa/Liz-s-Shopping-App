@@ -1,6 +1,12 @@
 # Changelog
 
-## Task 12 visual refinement — 2026-10-16
+## v1.0.0 published - 2026-10-16
+
+- Merged Task 12 visual refinement and published [GitHub release v1.0.0](https://github.com/brunkonjaa/Liz-s-Shopping-App/releases/tag/v1.0.0), including the signed APK.
+- Fixed backup import validation for embedded product images and shop logos longer than ordinary text fields; added regression tests for both round trips.
+- Fresh release build: 57 unit tests passed, lint completed and signed Release assembly succeeded. Pull request [run 38852503438](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38852503438) and post-merge `main` [run 38853152931](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38853152931) both passed build/security and Android 13 journey jobs.
+
+## Task 12 visual refinement, initial verification — 2026-10-16
 
 - Added stable-ID logo mapping for the four default shops across Home, the app bar, shop picker, management and drawer. Custom shops can use an offline image; shops without one show a neutral icon.
 - Added section artwork, improved heading and shop-name wrapping, moved Change Shop below the shop header, and alphabetized All Items.

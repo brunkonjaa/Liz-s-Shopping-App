@@ -4,6 +4,10 @@
 **Branch:** `task12/visual-refinement`<br>
 **Result:** Local checks, the Android 13 visual review and the corrected connected journey passed on Samsung SM-A127F. Hosted API 33 workflow run [38850508294](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38850508294) passed both jobs. API 37 instrumentation remains open.
 
+## Release follow-up - 2026-10-16
+
+Task 12 was merged to `main` and published as [v1.0.0](https://github.com/brunkonjaa/Liz-s-Shopping-App/releases/tag/v1.0.0). Review found that backup decoding sent embedded image data through the ordinary text-length limit, which rejected typical images. The fix validates product and shop image data with the existing image-specific size and format rules; regression tests cover both round trips. A fresh local release build passed 57 unit tests, lint and signed Release assembly. Pull request [run 38852503438](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38852503438) and post-merge `main` [run 38853152931](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38853152931) both passed build/security and Android 13 journey jobs. API 37 and the other coverage gaps listed below remain unverified.
+
 ## Result
 
 Task 12 is based on `0448373`, the Task 11 production release. We installed and launched the signed Release build on a Samsung SM-A127F running Android 13. The selected screenshots below show the four shop logos on Home and in the navigation drawer.
