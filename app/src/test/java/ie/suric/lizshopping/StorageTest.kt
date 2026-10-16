@@ -95,6 +95,21 @@ class StorageTest {
         assertEquals(logo.base64, restored.shop("Centra").logoImageDataBase64)
     }
 
+    @Test fun shopLogoLargerThanTextFieldLimitRoundTrips() {
+        val logoData = Base64.getEncoder().encodeToString(ByteArray(256) { it.toByte() })
+        assertTrue(logoData.length > 100)
+        val state = Rules.addShop(ShoppingState(), "Centra", ImportedImage("centra-logo.webp", logoData))
+        assertEquals(state, Backup.decode(Backup.encode(state)))
+    }
+
+    @Test fun productImageLargerThanTextFieldLimitRoundTrips() {
+        val imageData = Base64.getEncoder().encodeToString(ByteArray(256) { it.toByte() })
+        assertTrue(imageData.length > 100)
+        val product = Product("Custom image sample", "Other", "🛍", listOf(""), listOf(""), "custom:image-sample", "sample.webp", imageData)
+        val state = ShoppingState(custom = listOf(product))
+        assertEquals(state, Backup.decode(Backup.encode(state)))
+    }
+
     @Test fun versionTwoBackupWithoutShopImagesStillLoads() {
         val v2 = JSONObject(Backup.encode(sample())).put("version", 2)
         val shops = v2.getJSONArray("shops")

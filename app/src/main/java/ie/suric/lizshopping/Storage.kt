@@ -78,6 +78,13 @@ object Backup {
         return string(o, key)
     }
 
+    private fun nullableImageData(o: JSONObject, key: String): String? {
+        if (!o.has(key) || o.isNull(key)) return null
+        val value = o.get(key)
+        require(value is String) { "Invalid image data." }
+        return value.also { validateImageData(it) }
+    }
+
     private fun readItems(a: JSONArray, allowMissingProductId: Boolean): List<Item> {
         require(a.length() <= 1000) { "Too many items." }
         val result = (0 until a.length()).map { n ->
@@ -101,7 +108,7 @@ object Backup {
 
     private fun readProduct(o: JSONObject): Product {
         val imageRef = nullableString(o, "imageRef")?.also { validateImageRef(it) }
-        val imageData = nullableString(o, "imageDataBase64")?.also { validateImageData(it) }
+        val imageData = nullableImageData(o, "imageDataBase64")
         return Product(string(o, "name", true), string(o, "category", true), string(o, "symbol", true), options(o.getJSONArray("varieties")), options(o.getJSONArray("sizes")), string(o, "id", true), imageRef, imageData)
     }
 
@@ -118,7 +125,7 @@ object Backup {
         val result = (0 until a.length()).map { n ->
             val o = a.getJSONObject(n)
             val logoRef = nullableString(o, "logoImageRef")?.also { validateImageRef(it) }
-            val logoData = nullableString(o, "logoImageDataBase64")?.also { validateImageData(it) }
+            val logoData = nullableImageData(o, "logoImageDataBase64")
             Shop(string(o, "id", true), Rules.validateShopName(string(o, "name", true)), o.optBoolean("builtIn", false), logoRef, logoData)
         }
         require(result.map { it.id }.distinct().size == result.size)
