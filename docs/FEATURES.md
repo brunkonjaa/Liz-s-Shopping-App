@@ -4,7 +4,7 @@ This page describes the current feature set and what has been checked so far. Se
 
 ## Implemented
 
-- Offline shared catalogue with stable product identity, categories, varieties, package sizes and optional image metadata.
+- Offline shared catalogue with 892 grocery suggestions, stable product identity, categories, descriptions, pictogram thumbnails, varieties, package sizes and optional user image metadata. Research-derived entries are shown under the shop catalogues they came from and are not stock guarantees.
 - Four protected default shops plus persisted custom shops with validated names, rename support and conservative removal safeguards.
 - Shop-scoped catalogue associations, All Items, Favourites, Shopping List and reusable previous items.
 - Catalogue Add adds one package; favourite Add reuses the favourite count. List counts, completion and favourite defaults remain independent. Counts are 1-999, separate from package size.
@@ -17,7 +17,7 @@ This page describes the current feature set and what has been checked so far. Se
 
 ## Verified and remaining
 
-For Task 12, 55 unit tests passed, lint reported 0 errors and 16 warnings, and the signed Release APK assembled successfully. We installed it on a Samsung SM-A127F running Android 13 and inspected the main screens. The connected shopping journey failed at its initial Lidl card selector, and API 37 remains unverified. The [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md) includes screenshots and details.
+The catalogue expansion is source code for version 1.0.1 and is not yet part of the signed v1.0.0 release APK. Its catalogue, backup-size, unit, lint, build and Android journey checks must pass before release. For Task 12, 55 unit tests passed, lint reported 0 errors and 16 warnings, and the signed Release APK assembled successfully. We installed it on a Samsung SM-A127F running Android 13 and inspected the main screens. The connected shopping journey failed at its initial Lidl card selector, and API 37 remains unverified. The [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md) includes screenshots and details.
 
 Previous items are an undated reusable collection. Catalogue package sizes are suggestions, not stock guarantees. No pricing, purchase history, cloud sync or online purchasing is implemented.
 

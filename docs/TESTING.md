@@ -1,5 +1,9 @@
 # Testing
 
+## Catalogue expansion source checks — 2026-10-16
+
+Version 1.0.1 adds `CatalogueTest` checks for unique product names/IDs, descriptions and pictograms on every built-in item, representative products from the supplied catalogues, and the 1 MiB backup limit with the expanded catalogue. Run them with `./gradlew testDebugUnitTest`; run the full project CI checks with `./gradlew testDebugUnitTest lintDebug assembleDebug` and the Android 13 journey. These checks have not yet run in the current workspace because Gradle 9.4.1 is not cached and network access to `services.gradle.org` is unavailable. Do not treat the source checks or prior v1.0.0 results as evidence that v1.0.1 passes.
+
 ## Current release verification - 2026-10-16
 
 Release v1.0.0 is published from the merged Task 12 work. A follow-up fixed backup decoding for image data longer than the ordinary text-field limit and added product-image and shop-logo round-trip regression tests. A fresh `scripts/build-release.ps1` run completed `clean testDebugUnitTest lintDebug assembleRelease`: 57 unit tests passed, lint completed and the signed Release APK assembled. Pull request [run 38852503438](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38852503438) and post-merge `main` [run 38853152931](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38853152931) both passed build/security and Android 13 journey jobs. The connected Samsung SM-A127F / Android 13 journey and visual review are recorded in the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md). This does not verify every flow or device; the open areas below remain open.

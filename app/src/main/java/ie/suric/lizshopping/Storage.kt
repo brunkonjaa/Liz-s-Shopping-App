@@ -28,6 +28,8 @@ object Backup {
     private fun product(p: Product) = JSONObject().put("id", p.id).put("name", p.name).put("category", p.category)
         .put("symbol", p.symbol).put("varieties", JSONArray(p.varieties)).put("sizes", JSONArray(p.sizes))
         .put("imageRef", p.imageRef ?: JSONObject.NULL).put("imageDataBase64", p.imageDataBase64 ?: JSONObject.NULL)
+        .put("description", p.description)
+        .put("researchShops", JSONArray(p.researchShops))
 
     private fun shop(s: Shop) = JSONObject().put("id", s.id).put("name", s.name).put("builtIn", s.builtIn)
         .put("logoImageRef", s.logoImageRef ?: JSONObject.NULL).put("logoImageDataBase64", s.logoImageDataBase64 ?: JSONObject.NULL)
@@ -109,7 +111,15 @@ object Backup {
     private fun readProduct(o: JSONObject): Product {
         val imageRef = nullableString(o, "imageRef")?.also { validateImageRef(it) }
         val imageData = nullableImageData(o, "imageDataBase64")
-        return Product(string(o, "name", true), string(o, "category", true), string(o, "symbol", true), options(o.getJSONArray("varieties")), options(o.getJSONArray("sizes")), string(o, "id", true), imageRef, imageData)
+        val description = if (o.has("description")) string(o, "description") else ""
+        val researchShops = if (o.has("researchShops")) {
+            val shops = o.getJSONArray("researchShops")
+            require(shops.length() <= ShopDefaults.names.size)
+            (0 until shops.length()).map { n -> shops.getString(n).also { require(it in ShopDefaults.names) } }.also {
+                require(it.distinct().size == it.size)
+            }
+        } else emptyList()
+        return Product(string(o, "name", true), string(o, "category", true), string(o, "symbol", true), options(o.getJSONArray("varieties")), options(o.getJSONArray("sizes")), string(o, "id", true), imageRef, imageData, description, researchShops)
     }
 
     private fun readProducts(a: JSONArray): List<Product> {

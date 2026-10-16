@@ -209,6 +209,13 @@ fun ProductCardV2(
             Column(Modifier.weight(1f).padding(horizontal = 14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(product.name, style = MaterialTheme.typography.titleMedium)
                 Text(product.category, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    product.description,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Text(product.sizes.firstOrNull { it.isNotBlank() }.orEmpty(), color = MaterialTheme.colorScheme.secondary)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Button(onClick = onAdd, enabled = canAdd, modifier = Modifier.semantics { contentDescription = "Add ${product.name} to shopping list" }) { Text("+ Add") }

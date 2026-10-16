@@ -10,7 +10,7 @@ Invalid conversion or unsupported upgrade throws before a successful version adv
 
 ## JSON restore
 
-New exports are v3; valid v1 and v2 backups remain importable. v3 includes stable shop/product IDs, catalogue definitions, associations, lists/favourites/previous entries, package counts, completion, notes, product image metadata and optional custom-shop image metadata. Import reads are bounded to 1 MiB. Decode validates versions, identities, references, collection/text limits, quantities and image bounds before confirmation and transactional replacement.
+New exports are v3; valid v1 and v2 backups remain importable. v3 includes stable shop/product IDs, catalogue definitions, optional product descriptions and research-shop labels, associations, lists/favourites/previous entries, package counts, completion, notes, product image metadata and optional custom-shop image metadata. Descriptions and research-shop labels were added as optional v3 fields; older v3 backups without them still decode. Import reads are bounded to 1 MiB. Decode validates versions, identities, references, collection/text limits, quantities and image bounds before confirmation and transactional replacement.
 
 Custom image bytes are bounded and represented as metadata/base64 where available. A generated app-private image reference is not assumed to be a portable external path; missing images have a safe fallback.
 
