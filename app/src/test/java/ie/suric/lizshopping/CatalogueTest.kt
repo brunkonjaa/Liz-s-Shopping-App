@@ -18,12 +18,15 @@ class CatalogueTest {
         assertTrue("Expected the expanded four-store food catalogue", products.size >= 850)
         assertTrue(products.all { it.description.isNotBlank() && it.symbol.isNotBlank() })
         assertTrue(products.all { it.sizes.isNotEmpty() && it.varieties.isNotEmpty() })
+        assertEquals(ResearchCatalogue.products.size, ResearchCatalogue.products.map { it.id }.distinct().size)
         assertTrue(ResearchCatalogue.products.all { it.researchShops.isNotEmpty() && it.researchShops.all { shop -> shop in ShopDefaults.names } })
 
         listOf("Lamb chops", "Fresh basil", "Prawns", "Tinned tomatoes", "Frozen fish and seafood").forEach {
             assertNotNull("Expected researched item: $it", Catalogue.find(it))
         }
         assertTrue(Catalogue.find("Fresh basil")!!.researchShops.contains("Lidl"))
+        val beef = ResearchCatalogue.products.first { it.name.startsWith("Beef diced / stewing") }
+        assertTrue(beef.researchShops.containsAll(listOf("Lidl", "Aldi", "Dunnes Stores")))
     }
 
     @Test fun expandedCatalogueStillFitsValidatedOfflineBackup() {
