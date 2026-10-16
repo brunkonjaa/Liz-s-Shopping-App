@@ -2,7 +2,7 @@
 
 ## Historical scope and current follow-up - 2026-10-16
 
-This is the interaction and performance record from 2026-10-15. Its samples and test counts describe that build. Catalogue Add now adds one package while retaining the saved variety and size; Favourite Add uses its own count. The 160 ms route Crossfade described below was later removed, and routes now render current state directly. Current checks are listed in [TESTING.md](../TESTING.md), with the latest visual work in the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md). No new steady-state performance profile was collected during CI repair.
+This is the interaction and performance record from 2026-10-15. Its samples and test counts describe that build. Catalogue Add now adds one package while retaining the saved variety and size; Favourite Add uses its own count. The 160 ms route Crossfade described below was later removed, and routes now render current state directly. Current checks are listed in [TESTING.md](TESTING.md), with the latest visual work in the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md). No new steady-state performance profile was collected during CI repair.
 
 Date: 2026-10-15
 Branch: `development/task2-task3-integration`

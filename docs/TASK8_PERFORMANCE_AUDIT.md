@@ -2,7 +2,7 @@
 
 Audit date: 2026-10-16. Scope: read-only application investigation and local performance captures. No production source, test, Gradle, database, or device accessibility settings were changed.
 
-This audit captures the debug build and device conditions from its date. Task 11 later recorded a separate Release performance run, and Task 12 records the current visual changes and checks. See [TESTING.md](../TESTING.md) and the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md) for current status; the measurements below remain historical.
+This audit captures the debug build and device conditions from its date. Task 11 later recorded a separate Release performance run, and Task 12 records the current visual changes and checks. See [TESTING.md](TESTING.md) and the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md) for current status; the measurements below remain historical.
 
 ## A. Repository and environment
 

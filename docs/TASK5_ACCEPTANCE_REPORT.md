@@ -2,7 +2,7 @@
 
 ## Historical scope and current follow-up - 2026-10-16
 
-This report records the manual acceptance run from 2026-10-15, separate from the later Task 5 CI investigation. Its commands, APK hash and release verdict apply to that dated build. The current implementation is described in [TESTING.md](../TESTING.md) and the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md). The open UI, accessibility, reboot and backup checks below remain open; later CI results do not retroactively cover them.
+This report records the manual acceptance run from 2026-10-15, separate from the later Task 5 CI investigation. Its commands, APK hash and release verdict apply to that dated build. The current implementation is described in [TESTING.md](TESTING.md) and the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md). The open UI, accessibility, reboot and backup checks below remain open; later CI results do not retroactively cover them.
 
 Date: 2026-10-15  
 Repository: `https://github.com/brunkonjaa/Liz-s-Shopping-App.git`  

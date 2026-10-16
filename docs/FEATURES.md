@@ -17,7 +17,7 @@ This page describes the current feature set and what has been checked so far. Se
 
 ## Verified and remaining
 
-For Task 12, 55 unit tests passed, lint reported 0 errors and 16 warnings, and the signed Release APK assembled successfully. We installed it on a Samsung SM-A127F running Android 13 and inspected the main screens. The connected shopping journey failed at its initial Lidl card selector, and API 37 remains unverified. The [Task 12 report](docs/TASK12_VISUAL_REFINEMENT_REPORT.md) includes screenshots and details.
+For Task 12, 55 unit tests passed, lint reported 0 errors and 16 warnings, and the signed Release APK assembled successfully. We installed it on a Samsung SM-A127F running Android 13 and inspected the main screens. The connected shopping journey failed at its initial Lidl card selector, and API 37 remains unverified. The [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md) includes screenshots and details.
 
 Previous items are an undated reusable collection. Catalogue package sizes are suggestions, not stock guarantees. No pricing, purchase history, cloud sync or online purchasing is implemented.
 

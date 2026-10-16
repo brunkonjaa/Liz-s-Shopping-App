@@ -2,7 +2,7 @@
 
 Date: 2026-10-16. Scope: inspect the Task 8/9 evidence, check for a safe disposable comparison target, review the catalogue rendering path and record the strongest supported conclusion. No production or test code, device settings, household data, schema, dependency or permissions were changed. Profiling artifacts remain local under the ignored `verification/` directory.
 
-Task 10's service comparison remained unverified because no disposable Android 13 profiling target was available. Task 11 later recorded Release measurements; Task 12 added visual and storage changes and has its own current test results in [TESTING.md](../TESTING.md). Neither report changes the historical conditions recorded below.
+Task 10's service comparison remained unverified because no disposable Android 13 profiling target was available. Task 11 later recorded Release measurements; Task 12 added visual and storage changes and has its own current test results in [TESTING.md](TESTING.md). Neither report changes the historical conditions recorded below.
 
 ## 1. Repository baseline
 
@@ -69,7 +69,7 @@ No production optimization was justified or implemented. No service-off measurem
 
 No UI semantics or interaction code changed, so Task 10 introduces no intended accessibility behavior change. Add, Configure, Favourite, quantity, completion and sheet controls were not exercised with TalkBack in this task; accessibility behavior remains **NOT VERIFIED** here.
 
-No Task 10 tests were run because there was no production change. Task 9's earlier evidence remains historical and was not rerun: 50 unit tests passed; lint passed with zero errors and 13 warnings; debug APK assembly was reported up-to-date, so that command did not freshly produce an APK. A disposable Android 13 instrumentation journey was **NOT VERIFIED**. See [Task 9](TASK9_PERFORMANCE_OPTIMISATION_REPORT.md) and [TESTING.md](../TESTING.md) for scope and limits. No regression is claimed from unrun checks.
+No Task 10 tests were run because there was no production change. Task 9's earlier evidence remains historical and was not rerun: 50 unit tests passed; lint passed with zero errors and 13 warnings; debug APK assembly was reported up-to-date, so that command did not freshly produce an APK. A disposable Android 13 instrumentation journey was **NOT VERIFIED**. See [Task 9](TASK9_PERFORMANCE_OPTIMISATION_REPORT.md) and [TESTING.md](TESTING.md) for scope and limits. No regression is claimed from unrun checks.
 
 ## 8. Security, persistence and design
 

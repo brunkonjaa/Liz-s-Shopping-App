@@ -2,7 +2,7 @@
 
 ## Current status - 2026-10-16
 
-Task 3 established the app's warm editorial design and navigation. Task 4 later added contextual sheets, and follow-up work added direct Add and current-state routing. Private visual references remain local. Current results are in [TESTING.md](TESTING.md) and the [Task 12 report](docs/TASK12_VISUAL_REFINEMENT_REPORT.md); they do not change the scope of this historical design record.
+Task 3 established the app's warm editorial design and navigation. Task 4 later added contextual sheets, and follow-up work added direct Add and current-state routing. Private visual references remain local. Current results are in [TESTING.md](TESTING.md) and the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md); they do not change the scope of this historical design record.
 
 ## Done
 

@@ -2,7 +2,7 @@
 
 Date: 2026-10-16. Scope: reproduce catalogue scrolling on the existing Samsung target and assess whether current evidence justifies production changes. No application, test, Gradle, schema, dependency, permission, or device accessibility setting was changed. Profiling artifacts are local and ignored under `verification/task9-performance-optimisation/`.
 
-This report preserves the Task 9 debug-build investigation. Task 11 later measured the Release build, and Task 12 records the current visual implementation. Those later results do not make the Task 8/9 profiling runs a matched comparison; see [TESTING.md](../TESTING.md) for current checks.
+This report preserves the Task 9 debug-build investigation. Task 11 later measured the Release build, and Task 12 records the current visual implementation. Those later results do not make the Task 8/9 profiling runs a matched comparison; see [TESTING.md](TESTING.md) for current checks.
 
 ## A. Repository baseline
 

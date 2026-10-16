@@ -22,7 +22,7 @@ The following paragraphs record earlier Task 5 evidence and remain historical. A
 
 The strengthened Samsung journey passed in 68.805 seconds. Activity recreation alone retains the ViewModel, so the test reads the committed SQLite snapshot to verify that Aldi and Lidl keep independent data.
 
-Those earlier checks do not cover backup/restore UI, accessibility, reboot/update persistence, every sheet or custom-image flow, or API 37 runtime compatibility. See [TESTING.md](TESTING.md) for the current evidence and open checks.
+Those earlier checks do not cover backup/restore UI, accessibility, reboot/update persistence, every sheet or custom-image flow, or API 37 runtime compatibility. See [Testing](docs/TESTING.md) for the current evidence and open checks.
 
 ## Build
 
@@ -37,12 +37,12 @@ Instrumentation requires a disposable empty installation and can uninstall the a
 
 ## Documentation
 
-The seven current project documents are this README, [Features](FEATURES.md), [Architecture](ARCHITECTURE.md), [Testing](TESTING.md), [Migration](MIGRATION.md), [Security](SECURITY.md) and [Changelog](CHANGELOG.md).
+The project guide is this README and the repository rules are in [AGENTS.md](AGENTS.md). Feature, architecture, testing, migration, privacy and release notes live together in [`docs/`](docs/): [Features](docs/FEATURES.md), [Architecture](docs/ARCHITECTURE.md), [Testing](docs/TESTING.md), [Migration](docs/MIGRATION.md), [Security](docs/SECURITY.md) and [Changelog](docs/CHANGELOG.md).
 
 ### Task reports
 
-- [Task 3: Visual redesign](TASK_3_IMPLEMENTATION.md)
-- [Task 4: Shared interactions](TASK_4_IMPLEMENTATION.md)
+- [Task 3: Visual redesign](docs/TASK_3_IMPLEMENTATION.md)
+- [Task 4: Shared interactions](docs/TASK_4_IMPLEMENTATION.md)
 - [Task 5: Acceptance report](docs/TASK5_ACCEPTANCE_REPORT.md)
 - [Task 5: CI investigation](docs/TASK5_CI_INSTRUMENTATION_REPORT.md)
 - [Task 7: Interaction and performance](docs/TASK7_INTERACTION_AND_PERFORMANCE_REPORT.md)

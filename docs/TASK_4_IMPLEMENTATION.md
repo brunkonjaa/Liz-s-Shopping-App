@@ -2,7 +2,7 @@
 
 ## Current status - 2026-10-16
 
-Task 4 added the shared sheets and workflows described below. The current test results and remaining sheet, keyboard and accessibility checks are in [TESTING.md](TESTING.md) and the [Task 12 report](docs/TASK12_VISUAL_REFINEMENT_REPORT.md). Screenshots from the earlier work show only the states captured at that time.
+Task 4 added the shared sheets and workflows described below. The current test results and remaining sheet, keyboard and accessibility checks are in [TESTING.md](TESTING.md) and the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md). Screenshots from the earlier work show only the states captured at that time.
 
 ## Shared interaction layer
 

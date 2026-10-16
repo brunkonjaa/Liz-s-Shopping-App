@@ -10,5 +10,5 @@
 - Do not use destructive schema upgrades. Add and test explicit migrations.
 
 # Documentation and local evidence
-- The seven current project documents are `README.md`, `FEATURES.md`, `ARCHITECTURE.md`, `TESTING.md`, `MIGRATION.md`, `SECURITY.md` and `CHANGELOG.md`. Link dated task reports to current status, and keep historical measurements clearly dated.
+- The seven current project documents are the root `README.md` plus `docs/FEATURES.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`, `docs/MIGRATION.md`, `docs/SECURITY.md` and `docs/CHANGELOG.md`. Keep this `AGENTS.md` at the repository root. Link dated task reports to current status, and keep historical measurements clearly dated.
 - Keep private design references, handovers, raw UI dumps and database snapshots ignored. Add only a small set of app screenshots to documentation when the user asks; inspect each image first and keep household data out of captures.
