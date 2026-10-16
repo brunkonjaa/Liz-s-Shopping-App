@@ -1,1 +1,9 @@
-<resources><style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar"><item name="android:fontFamily">sans</item><item name="android:windowLightStatusBar">true</item><item name="android:colorAccent">#237747</item><item name="android:windowBackground">#F8F9F5</item></style></resources>
+<resources>
+    <style name="LizAppBaseTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:colorAccent">#237747</item>
+        <item name="android:windowBackground">#F8F9F5</item>
+    </style>
+    <style name="AppTheme" parent="@style/LizAppBaseTheme" />
+</resources>

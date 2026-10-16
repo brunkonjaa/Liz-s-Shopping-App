@@ -1,24 +1,28 @@
 # Liz's Shopping List
 
-A native Kotlin and Jetpack Compose grocery-list app for Lidl, Aldi, Dunnes Stores and SuperValu. Lists work offline, with no accounts, network services, adverts, analytics, payments or pricing. The existing cream/olive editorial interface and light/dark/system appearance are preserved.
+A native Kotlin and Jetpack Compose grocery list for Lidl, Aldi, Dunnes Stores and SuperValu. It works offline and keeps each shop's list separate. The app has no accounts, ads, analytics, payments or online services.
 
 ## Current implementation
 
-- Shared catalogue with stable product IDs, varieties, package sizes and optional offline images.
-- Independent shop lists, favourites, previous items, package counts and completion states.
-- Four protected default shops and validated custom-shop creation/rename/removal.
-- Direct catalogue Add adds **one package**, using a saved variety/size when available. Favourite Add uses that favourite's saved count; list edits never change the favourite default. Package size and package count are separate; counts are 1-999.
-- Contextual Material 3 sheets for shop management, product configuration and list/backup actions.
-- Private SQLite snapshot storage, explicit v1-to-v2 migration, bounded validated v1/v2 JSON restore and transactional replacement.
-- Offline document-picker image import into app-private storage. No broad storage or network permission.
+- A shared catalogue with stable product IDs, varieties, package sizes and optional offline images.
+- Separate lists, favourites and previous items for each shop.
+- Four protected default shops, plus custom shops with validated names and optional logos.
+- Catalogue Add adds one package, using a saved variety and size when available. Favourite Add uses its saved count. Editing a list item does not change its favourite default. Package size and package count are separate; counts range from 1 to 999.
+- Material 3 sheets for shop management, product configuration and list actions.
+- Private SQLite snapshot storage with explicit v1/v2 migrations. JSON backup restore accepts bounded, validated v1, v2 and v3 files and replaces data transactionally.
+- Optional product and shop images selected with the document picker and stored in app-private storage.
+- Correct local logos for the four default shops, shared across the app. Custom shops show their chosen image or a neutral icon.
+- Section artwork, an alphabetized All Items list, Liz's portrait on the launcher and splash screen, and a faint portrait backdrop.
 
 ## Verified state - 2026-10-16
 
-Implementation `265b941` passed 50 unit tests, lint (0 errors, 13 existing warnings), debug/test APK assembly, packaged-security checks, three current Samsung Android 13 journey runs and [GitHub Android 13 Pixel 2 instrumentation](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38825384833). Failed and successful CI artifacts were inspected. The test now accounts for off-screen controls and transient snackbar coverage without sleeps, weaker outcomes or production changes for Task 5.
+Task 12 is implemented on `task12/visual-refinement`. The current local build passed 55 unit tests, lint (0 errors, 16 warnings) and signed Release assembly. We installed and launched that Release on a Samsung SM-A127F running Android 13, and inspected Home, the shop cards, drawer and Settings. Home and the Android 12+ splash screen show Liz; Home also shows a basket of apples, vegetables and bread. After aligning the journey with returning-user navigation and the current “Change shop” label, the full connected Android 13 journey passed on that Samsung. The hosted API 33 Pixel 2 workflow also passed in [run 38850508294](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38850508294). See the [Task 12 report](docs/TASK12_VISUAL_REFINEMENT_REPORT.md) for screenshots and remaining verification limits.
 
-Review also strengthens the journey with independent committed SQLite assertions: Aldi must persist before returning to Lidl, which must persist with list count 7 and favourite count 1. Activity recreation alone retains the ViewModel and is not a persistence proof. This strengthened test passed on Samsung in 68.805s; the final PR head must pass CI before merging.
+The following paragraphs record earlier Task 5 evidence and remain historical. At implementation `265b941`, 50 unit tests passed alongside lint, APK and packaged-security checks, three Samsung Android 13 journey runs and [GitHub Android 13 Pixel 2 instrumentation](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38825384833). The CI journey was later strengthened with committed SQLite read-back checks for shop selection and independent quantities.
 
-This consolidation brings the later state/count fixes and the verified test/documents together on the main integration path. It does not certify untested backup/restore UI, accessibility, reboot/update persistence, all sheet/custom-image flows or API 37 runtime compatibility. See [TESTING.md](TESTING.md) for current evidence and limits.
+The strengthened Samsung journey passed in 68.805 seconds. Activity recreation alone retains the ViewModel, so the test reads the committed SQLite snapshot to verify that Aldi and Lidl keep independent data.
+
+Those earlier checks do not cover backup/restore UI, accessibility, reboot/update persistence, every sheet or custom-image flow, or API 37 runtime compatibility. See [Testing](docs/TESTING.md) for the current evidence and open checks.
 
 ## Build
 
@@ -33,6 +37,21 @@ Instrumentation requires a disposable empty installation and can uninstall the a
 
 ## Documentation
 
-The seven current project documents are this README, [FEATURES](FEATURES.md), [ARCHITECTURE](ARCHITECTURE.md), [TESTING](TESTING.md), [MIGRATION](MIGRATION.md), [SECURITY](SECURITY.md) and [CHANGELOG](CHANGELOG.md).
+The project guide is this README and the repository rules are in [AGENTS.md](AGENTS.md). Feature, architecture, testing, migration, privacy and release notes live together in [`docs/`](docs/): [Features](docs/FEATURES.md), [Architecture](docs/ARCHITECTURE.md), [Testing](docs/TESTING.md), [Migration](docs/MIGRATION.md), [Security](docs/SECURITY.md) and [Changelog](docs/CHANGELOG.md).
 
-Task records: [Task 3 UI](TASK_3_IMPLEMENTATION.md), [Task 4 sheets](TASK_4_IMPLEMENTATION.md), [historical acceptance](docs/TASK5_ACCEPTANCE_REPORT.md), [historical Task 7 performance](docs/TASK7_INTERACTION_AND_PERFORMANCE_REPORT.md), and [CI diagnosis/completion](docs/TASK5_CI_INSTRUMENTATION_REPORT.md). Historical measurements retain their dates and do not supersede current testing evidence. Local visual references, handovers, captures and database snapshots stay ignored and are not uploaded.
+### Task reports
+
+- [Task 3: Visual redesign](docs/TASK_3_IMPLEMENTATION.md)
+- [Task 4: Shared interactions](docs/TASK_4_IMPLEMENTATION.md)
+- [Task 5: Acceptance report](docs/TASK5_ACCEPTANCE_REPORT.md)
+- [Task 5: CI investigation](docs/TASK5_CI_INSTRUMENTATION_REPORT.md)
+- [Task 7: Interaction and performance](docs/TASK7_INTERACTION_AND_PERFORMANCE_REPORT.md)
+- [Task 8: Performance audit](docs/TASK8_PERFORMANCE_AUDIT.md)
+- [Task 9: Performance investigation](docs/TASK9_PERFORMANCE_OPTIMISATION_REPORT.md)
+- [Task 10: Performance isolation](docs/TASK10_PERFORMANCE_ISOLATION_AND_REMEDIATION_REPORT.md)
+- [Task 11: Production release](docs/TASK11_PRODUCTION_RELEASE_REPORT.md)
+- [Task 12: Visual refinement](docs/TASK12_VISUAL_REFINEMENT_REPORT.md)
+
+The performance reports keep their original dates and workloads. Task 8 and Task 9 found severe scroll jank on a debug build while an accessibility service was enabled. Task 11 later measured 3.12% pooled GFXInfo jank on the Release build, but build type and run order differed, so the figures do not establish a cause. The [Task 10 report](docs/TASK10_PERFORMANCE_ISOLATION_AND_REMEDIATION_REPORT.md) explains why a matched service comparison remains open.
+
+Private design references, handovers, raw device captures and database snapshots stay local. The selected Task 12 logo screenshots are included in its report at the user's request.

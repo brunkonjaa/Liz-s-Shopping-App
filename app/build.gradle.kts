@@ -7,12 +7,35 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+    signingConfigs {
+        val releaseStoreFile = providers.environmentVariable("LIZ_RELEASE_STORE_FILE").orNull
+        val releaseStorePassword = providers.environmentVariable("LIZ_RELEASE_STORE_PASSWORD").orNull
+        val releaseKeyAlias = providers.environmentVariable("LIZ_RELEASE_KEY_ALIAS").orNull
+        val releaseKeyPassword = providers.environmentVariable("LIZ_RELEASE_KEY_PASSWORD").orNull
+        if (listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { !it.isNullOrBlank() }) {
+            create("release") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
     buildFeatures { compose = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     testOptions { unitTests.isIncludeAndroidResources = true }
+    buildTypes {
+        getByName("release") {
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.findByName("release")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+        }
+    }
 }
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2026.08.00"))

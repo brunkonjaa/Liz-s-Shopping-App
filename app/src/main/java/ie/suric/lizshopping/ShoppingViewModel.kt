@@ -128,9 +128,16 @@ class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
 
     fun fresh(shop: String) = shop(shop, "Fresh list ready. Previous items are saved.", Rules::fresh)
     fun reuse(shop: String) = shop(shop, "Previous items added", Rules::reuse)
-    fun addShop(name: String) = update("Shop added") { Rules.addShop(it, name) }
+    fun addShop(name: String, logo: ImportedImage? = null) = update("Shop added") { Rules.addShop(it, name, logo) }
     fun renameShop(shop: String, name: String) = update("Shop renamed") { state -> Rules.renameShop(state, state.shop(shop).id, name) }
     fun removeShop(shop: String) = update("Shop removed") { state -> Rules.removeShop(state, state.shop(shop).id) }
+
+    fun updateShopLogo(shopId: String, logo: ImportedImage?) = update("Shop image saved") { state ->
+        require(state.shopDefinitions.any { it.id == shopId }) { "Unknown shop" }
+        state.copy(shopDefinitions = state.shopDefinitions.map {
+            if (it.id == shopId) it.copy(logoImageRef = logo?.reference, logoImageDataBase64 = logo?.base64) else it
+        })
+    }
 
     fun importProductImage(productId: String, image: ImportedImage) = update("Product image saved") { state ->
         state.copy(custom = state.custom.map { if (it.id == productId) it.copy(imageRef = image.reference, imageDataBase64 = image.base64) else it })

@@ -1,5 +1,7 @@
 package ie.suric.lizshopping
 
+import android.graphics.BitmapFactory
+import android.util.Base64
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -31,6 +34,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,7 +50,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,15 +86,23 @@ fun LizBottomSheet(
 
 @Composable
 fun EditorialBanner(title: String, subtitle: String, symbol: String, modifier: Modifier = Modifier, accent: Color = MaterialTheme.colorScheme.primary, imagePainter: Painter? = null) {
-    val headingStyle = if (title.length > 8) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.displayLarge
-    val heroPainter = imagePainter ?: painterResource(R.drawable.grocery_hero_small)
-    Box(modifier.fillMaxWidth().height(196.dp).clip(MaterialTheme.shapes.large)) {
-        Image(painter = heroPainter, contentDescription = null, modifier = Modifier.fillMaxWidth(), contentScale = ContentScale.Crop)
-        Box(Modifier.fillMaxWidth().height(196.dp).background(Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.surface.copy(alpha = .94f), Color.Transparent))))
-        Column(Modifier.align(Alignment.CenterStart).padding(horizontal = 20.dp, vertical = 18.dp).fillMaxWidth(.68f)) {
-            Text(title, style = headingStyle, color = accent)
+    val headingStyle = if (title.length > 7) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.displaySmall
+    val heroPainter = imagePainter ?: painterResource(when (title) {
+        "ALL ITEMS" -> R.drawable.hero_helmet_flavours
+        "FAVOURITES" -> R.drawable.hero_favourites
+        "MY LIST" -> R.drawable.hero_shopping_list
+        "SETTINGS" -> R.drawable.hero_settings
+        "SHOP MANAGEMENT" -> R.drawable.hero_shop_management
+        "PREVIOUS ITEMS" -> R.drawable.hero_previous
+        else -> R.drawable.hero_catalogue
+    })
+    Box(modifier.fillMaxWidth().heightIn(min = 196.dp).clip(MaterialTheme.shapes.large)) {
+        Image(painter = heroPainter, contentDescription = null, modifier = Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+        Box(Modifier.matchParentSize().background(Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.surface.copy(alpha = .96f), MaterialTheme.colorScheme.surface.copy(alpha = .72f), Color.Transparent))))
+        Column(Modifier.align(Alignment.CenterStart).padding(horizontal = 20.dp, vertical = 18.dp).fillMaxWidth(.86f)) {
+            Text(title, style = headingStyle, color = accent, softWrap = true)
             Spacer(Modifier.height(6.dp))
-            Text(subtitle, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+            Text(subtitle, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.fillMaxWidth(.76f), softWrap = true)
         }
     }
 }
@@ -113,25 +132,64 @@ fun ProductThumbnail(symbol: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun ShopMark(name: String, modifier: Modifier = Modifier) {
-    val tint = when (name) { "Lidl" -> Color(0xFF07519D); "Aldi" -> Color(0xFF253B93); "Dunnes Stores" -> Color(0xFF174D37); else -> Color(0xFFC51F3C) }
-    Box(modifier.clip(MaterialTheme.shapes.small).background(tint), contentAlignment = Alignment.Center) {
-        when (name) {
-            "Lidl" -> Box(Modifier.size(34.dp).clip(CircleShape).background(Color(0xFFFFE500)), contentAlignment = Alignment.Center) { Text("LIDL", color = tint, fontWeight = FontWeight.Bold, fontSize = 8.sp) }
-            "Aldi" -> Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("ALDI", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp); Box(Modifier.width(30.dp).height(2.dp).background(Color(0xFF62C2EF))) }
-            "Dunnes Stores" -> Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("DUNNES", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 9.sp); Text("STORES", color = Color.White, fontSize = 7.sp) }
-            else -> Text("SuperValu", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+    val shop = ShopDefaults.definitions.firstOrNull { it.name == name } ?: Shop("custom:$name", name)
+    ShopMark(shop, modifier)
+}
+
+object ShopBranding {
+    fun logoResource(shopId: String): Int? = when (shopId) {
+        "Lidl" -> R.drawable.brand_lidl
+        "Aldi" -> R.drawable.brand_aldi
+        "Dunnes Stores" -> R.drawable.brand_dunnes_stores
+        "SuperValu" -> R.drawable.brand_supervalu
+        else -> null
+    }
+}
+
+@Composable
+fun ShopMark(shop: Shop, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val customLogo by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, shop.id, shop.logoImageRef, shop.logoImageDataBase64) {
+        value = withContext(Dispatchers.IO) {
+            val fileBytes = shop.logoImageRef?.let { reference ->
+                runCatching { ImageStore.file(context, reference).takeIf { it.isFile && it.length() <= ImageStore.MAX_BYTES }?.readBytes() }.getOrNull()
+            }
+            val bytes = fileBytes ?: shop.logoImageDataBase64?.let { encoded ->
+                runCatching { Base64.decode(encoded, Base64.DEFAULT).takeIf { it.size <= ImageStore.MAX_BYTES } }.getOrNull()
+            }
+            bytes?.let { raw ->
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeByteArray(raw, 0, raw.size, bounds)
+                if (bounds.outWidth !in 1..4096 || bounds.outHeight !in 1..4096) null else {
+                    val sample = generateSequence(1) { it * 2 }.takeWhile { maxOf(bounds.outWidth, bounds.outHeight) / it > 192 }.last()
+                    BitmapFactory.decodeByteArray(raw, 0, raw.size, BitmapFactory.Options().apply { inSampleSize = sample })?.asImageBitmap()
+                }
+            }
+        }
+    }
+    val brandResource = ShopBranding.logoResource(shop.id)
+    Box(modifier.clip(MaterialTheme.shapes.small).background(if (customLogo != null || brandResource != null) Color.White else MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+        when {
+            customLogo != null -> Image(customLogo!!, contentDescription = null, modifier = Modifier.fillMaxSize().padding(3.dp), contentScale = ContentScale.Fit)
+            brandResource != null -> Image(painterResource(brandResource), contentDescription = null, modifier = Modifier.fillMaxSize().padding(3.dp), contentScale = ContentScale.Fit)
+            else -> Text("🛒", fontSize = 23.sp)
         }
     }
 }
 
 @Composable
-fun ShopCard(name: String, data: ShopData, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val brandSurface = when (name) { "Lidl" -> Color(0xFFE8F0F7); "Aldi" -> Color(0xFFF9F0E4); "Dunnes Stores" -> Color(0xFFEAF3E9); else -> Color(0xFFFBE9E9) }
-    Card(onClick = onClick, modifier = modifier, shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else brandSurface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
-        Row(Modifier.fillMaxWidth().heightIn(min = 112.dp).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            ShopMark(name, Modifier.size(54.dp))
-            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) { Text(name, style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp)); Text("${data.items.count { !it.done }} items", color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            Text("\u203A", fontSize = 32.sp, color = MaterialTheme.colorScheme.onSurface)
+fun ShopCard(shop: Shop, data: ShopData, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val name = shop.name
+    val itemCount = data.items.count { !it.done }
+    val brandSurface = when (shop.id) { "Lidl" -> Color(0xFFE8F0F7); "Aldi" -> Color(0xFFF9F0E4); "Dunnes Stores" -> Color(0xFFEAF3E9); "SuperValu" -> Color(0xFFFBE9E9); else -> MaterialTheme.colorScheme.surface }
+    Card(onClick = onClick, modifier = modifier.testTag("shop-card-${shop.id}").semantics { contentDescription = "Select $name shop, $itemCount items" }, shape = MaterialTheme.shapes.medium, colors = CardDefaults.cardColors(containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else brandSurface), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 112.dp).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            ShopMark(shop, Modifier.size(42.dp))
+            Column(Modifier.weight(1f).padding(start = 8.dp)) {
+                Text(name, style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text("$itemCount items", color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, softWrap = false)
+            }
+            Text("\u203A", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

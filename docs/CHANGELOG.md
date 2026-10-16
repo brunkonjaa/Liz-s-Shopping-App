@@ -1,5 +1,37 @@
 # Changelog
 
+## Task 12 visual refinement — 2026-10-16
+
+- Added stable-ID logo mapping for the four default shops across Home, the app bar, shop picker, management and drawer. Custom shops can use an offline image; shops without one show a neutral icon.
+- Added section artwork, improved heading and shop-name wrapping, moved Change Shop below the shop header, and alphabetized All Items.
+- Added Liz's derived portrait to the launcher, Android 12+ splash screen, Home banner and faint app background. The Home banner pairs her portrait with a basket of fruit, vegetables and bread.
+- Added optional custom-shop image metadata to database and backup v3, with explicit v1/v2 migration. Updated the connected journey to navigate through Home for first-use and returning installations, select Lidl through its stable card tag, and use the current `Change shop` label. The full Android 13 Samsung journey and hosted API 33 Pixel 2 workflow [38850508294](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38850508294) pass. The Release build passed 55 unit tests, lint (0 errors) and assembly, and was installed and inspected on Android 13. See the [Task 12 report](TASK12_VISUAL_REFINEMENT_REPORT.md) for screenshots and remaining checks.
+
+## Task 11 production release - 2026-10-16
+
+- Configured v1.0.0 (`versionCode=1`) as an optimized, resource-shrunk, non-debuggable Release build, with signing credentials supplied from a per-user DPAPI-protected local identity outside the repository.
+- Built and verified `release-output/Lizs-Shopping-List-v1.0.0-release.apk`; installed and launched it on the Samsung SM-A127F / Android 13, then exercised core shopping flows and cleared only this app's test data.
+- Captured five matched 60-second catalogue-scroll trials and a Perfetto FrameTimeline trace. Release GFXInfo pooled jank was 3.12%; this is not causal proof against the earlier debug-build profile. See `docs/TASK11_PRODUCTION_RELEASE_REPORT.md` for data, acceptance gaps and backup instructions.
+- No application feature, schema, permission or visual design change was made. The trace parser, APK and private device captures remain local/ignored.
+
+## Task 10 performance isolation - 2026-10-16
+
+- Reviewed the Task 8/9 profiling evidence, catalogue implementation, current Android targets and local performance artifacts. No disposable API 33 target was available for a matched accessibility-service comparison.
+- Confirmed the repeated jank symptom and a Compose semantics traversal hotspot under the enabled service; service causality and optimized performance remain unverified. No production or test code changed; profiling artifacts remain ignored.
+- Added `docs/TASK10_PERFORMANCE_ISOLATION_AND_REMEDIATION_REPORT.md` with the environment limit, existing verification boundary and next recommendation.
+
+## Task 9 performance investigation - 2026-10-16
+
+- Reproduced severe catalogue-scroll jank in five 60-second captures on the Samsung SM-A127F while preserving household data and leaving accessibility settings unchanged.
+- Repeated Compose accessibility traversal hotspots under the enabled service; the service-off comparison and causal attribution remain unverified.
+- Added `docs/TASK9_PERFORMANCE_OPTIMISATION_REPORT.md`. No production optimization was justified from the available evidence; no app behavior or data format changed.
+
+## Task 8 performance audit - 2026-10-16
+
+- Captured five fresh process-cold launch timings and five repeatable catalogue-scroll frame samples on the connected Samsung SM-A127F / Android 13.
+- Perfetto and Simpleperf identified severe app-layer deadline misses and a main-thread Compose accessibility traversal hotspot under the phone's current accessibility-service setup. Attribution outside that setup remains unverified.
+- Added `docs/TASK8_PERFORMANCE_AUDIT.md` with environment details, measured results, confidence boundaries, and conditional Task 9/10 plans. No production, test, Gradle, schema, or device settings were changed; captures remain in the ignored local `verification/task8-performance-audit/` folder.
+
 ## Consolidation - 2026-10-16
 
 - Consolidated the seven current project documents and refreshed all task reports with explicit current versus historical evidence.
