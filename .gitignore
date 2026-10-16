@@ -15,6 +15,7 @@ local.properties
 /.vscode/
 /screenshots/
 /verification/
+/release-output/
 
 # Local investigation captures and private UI guidance at the project root.
 /shopping-*.png

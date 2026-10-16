@@ -1,5 +1,12 @@
 # Changelog
 
+## Task 11 production release - 2026-10-16
+
+- Configured v1.0.0 (`versionCode=1`) as an optimized, resource-shrunk, non-debuggable Release build, with signing credentials supplied from a per-user DPAPI-protected local identity outside the repository.
+- Built and verified `release-output/Lizs-Shopping-List-v1.0.0-release.apk`; installed and launched it on the Samsung SM-A127F / Android 13, then exercised core shopping flows and cleared only this app's test data.
+- Captured five matched 60-second catalogue-scroll trials and a Perfetto FrameTimeline trace. Release GFXInfo pooled jank was 3.12%; this is not causal proof against the earlier debug-build profile. See `docs/TASK11_PRODUCTION_RELEASE_REPORT.md` for data, acceptance gaps and backup instructions.
+- No application feature, schema, permission or visual design change was made. The trace parser, APK and private device captures remain local/ignored.
+
 ## Task 10 performance isolation - 2026-10-16
 
 - Reviewed the Task 8/9 profiling evidence, catalogue implementation, current Android targets and local performance artifacts. No disposable API 33 target was available for a matched accessibility-service comparison.
