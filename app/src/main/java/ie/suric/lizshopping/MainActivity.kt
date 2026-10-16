@@ -7,8 +7,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -192,19 +190,18 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
                 editing != null -> "editor"
                 else -> "shop:${shop}:$tab"
             }
-            Crossfade(targetState = route, animationSpec = tween(160), label = "Screen transition") { targetRoute ->
-            if (targetRoute == "loading" || s == null) {
+            if (route == "loading" || s == null) {
                 Column(Modifier.padding(padding).padding(24.dp)) { if (loadFailed) Text("Saved data could not be loaded. Open options to restore a backup, or restart the app.") else { CircularProgressIndicator(); Text("Loading saved shopping lists…") } }
-            } else if (targetRoute == "settings") {
+            } else if (route == "settings") {
                 SettingsPageV2(Modifier.padding(padding), s, themeMode, onThemeChange, { sheet = ActiveSheet.AddShop }, { name -> sheet = ActiveSheet.RenameShop(s.shop(name)) }, { name -> sheet = ActiveSheet.RemoveShop(s.shop(name)) })
-            } else if (targetRoute == "home") {
+            } else if (route == "home") {
                 val homeShop = s.selected ?: s.shopNames().first()
                 HomePageV2(Modifier.padding(padding), s, { selected -> vm.select(selected); choosing = false; tab = 0; query = ""; category = null }, { vm.select(homeShop); choosing = false; tab = 1 }, { vm.select(homeShop); choosing = false; tab = 2 }, { vm.select(homeShop); choosing = false; tab = 0 })
             } else {
                 val activeShop = requireNotNull(shop)
                 val data = s.dataFor(activeShop)
                 val edit = editing
-        if (targetRoute == "editor" && edit != null) {
+        if (route == "editor" && edit != null) {
                     LizBottomSheet(if (edit.mode == "custom") "Add new product" else "Edit ${edit.item.name}", "Configure this product without leaving your shopping list.", { selectedImage = null; editing = null }) {
                     ProductEditor(Modifier.fillMaxWidth(), edit, s.allProducts(), data.favourites.any { it.key() == edit.item.key() }, selectedImage, { imagePicker.launch(arrayOf("image/png", "image/jpeg", "image/webp")) }, { selectedImage = null; editing = null }) { item, productCategory, heart, image ->
                         when (edit.mode) { "list" -> vm.edit(activeShop, item); "favourite" -> vm.editFavourite(activeShop, edit.item, item); "custom" -> vm.custom(item, activeShop, productCategory, heart, image); else -> vm.add(activeShop, item) }
@@ -221,7 +218,6 @@ fun ShoppingApp(themeMode: String = "system", onThemeChange: (String) -> Unit = 
                          else -> ShoppingListPage(Modifier.padding(padding), activeShop, data, { item -> vm.complete(activeShop, item.id) }, { item -> vm.quantity(activeShop, item.id, -1) }, { item -> vm.quantity(activeShop, item.id, 1) }, { item -> editing = Editing(item, s.productFor(item) ?: s.allProducts().firstOrNull { p -> p.name.equals(item.name, true) }, "list") }, { item -> vm.remove(activeShop, item.id) }, { tab = 0; query = "" })
                     }
                 }
-            }
             }
         }
     }

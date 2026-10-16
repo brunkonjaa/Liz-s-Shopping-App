@@ -65,13 +65,13 @@ class RulesTest {
         assertNotEquals(state.dataFor("Lidl").items.single().id, state.dataFor("Aldi").items.single().id)
     }
 
-    @Test fun catalogueDefaultReusesSavedConfigurationAndQuantity() {
+    @Test fun catalogueDefaultReusesSavedConfigurationButUsesOnePackage() {
         val product = Catalogue.find("Milk")!!
         val savedSize = product.sizes.last { it.isNotBlank() }
         val saved = Item(name = product.name, productId = product.id, variety = product.varieties.first(), size = savedSize, quantity = 3)
         val item = Rules.defaultItem(product, ShopData(favourites = listOf(saved)))
         assertEquals(savedSize, item!!.size)
-        assertEquals(3, item.quantity)
+        assertEquals(1, item.quantity)
         assertEquals(product.id, item.productId)
     }
 
@@ -81,7 +81,78 @@ class RulesTest {
         val item = Rules.defaultItem(product, data)!!
         val result = Rules.add(data.items, item)
         assertEquals(1, result.size)
-        assertEquals(4, result.single().quantity)
+        assertEquals(3, result.single().quantity)
+    }
+
+    @Test fun repeatedCatalogueAddsIncreaseByOne() {
+        val product = Catalogue.find("Rolls")!!
+        var data = ShopData()
+        repeat(10) { index ->
+            val item = Rules.defaultItem(product, data)!!
+            data = data.copy(items = Rules.add(data.items, item))
+            assertEquals(index + 1, data.items.single().quantity)
+        }
+        assertEquals(1, data.items.size)
+        assertEquals(10, data.items.single().quantity)
+    }
+
+    @Test fun catalogueAddIncreasesExistingQuantityByOne() {
+        val product = Catalogue.find("Rolls")!!
+        val existing = Item(name = product.name, productId = product.id, variety = product.varieties.first(), size = product.sizes.first(), quantity = 7)
+        val data = ShopData(items = listOf(existing))
+        val result = Rules.add(data.items, Rules.defaultItem(product, data)!!)
+        assertEquals(8, result.single().quantity)
+    }
+
+    @Test fun explicitProductConfigurationUsesSelectedQuantity() {
+        val product = Catalogue.find("Rolls")!!
+        val configured = Item(name = product.name, productId = product.id, variety = product.varieties.first(), size = product.sizes.first(), quantity = 4)
+        assertEquals(4, Rules.add(emptyList(), configured).single().quantity)
+    }
+
+    @Test fun catalogueAddDoesNotChangeShoppingListQuantityControls() {
+        val existing = Item(name = "Rolls", quantity = 7)
+        val increased = Rules.changeQuantity(existing, 1)
+        val decreased = Rules.changeQuantity(increased, -1)
+        assertEquals(8, increased.quantity)
+        assertEquals(7, decreased.quantity)
+    }
+
+    @Test fun twentyRapidCatalogueAddsAreSequentialAndBounded() {
+        val product = Catalogue.find("Rolls")!!
+        var data = ShopData()
+        repeat(20) {
+            data = data.copy(items = Rules.add(data.items, Rules.defaultItem(product, data)!!))
+        }
+        assertEquals(1, data.items.size)
+        assertEquals(20, data.items.single().quantity)
+    }
+
+    @Test fun catalogueAddStopsAtMaximumQuantity() {
+        val product = Catalogue.find("Rolls")!!
+        val defaultItem = Rules.defaultItem(product, ShopData())!!
+        val at998 = Item(name = product.name, productId = product.id, variety = defaultItem.variety, size = defaultItem.size, quantity = 998)
+        val at999 = at998.copy(quantity = 999)
+        assertEquals(999, Rules.add(listOf(at998), defaultItem).single().quantity)
+        assertEquals(999, Rules.add(listOf(at999), defaultItem).single().quantity)
+    }
+
+    @Test fun favouriteAddKeepsConfiguredQuantityIndependentFromCatalogueAdd() {
+        val product = Catalogue.find("Rolls")!!
+        val favourite = Item(name = product.name, productId = product.id, variety = product.varieties.first(), size = product.sizes.first(), quantity = 3)
+        val catalogueItem = Rules.defaultItem(product, ShopData(favourites = listOf(favourite)))!!
+        assertEquals(1, catalogueItem.quantity)
+        assertEquals(3, Rules.add(emptyList(), favourite.copy(id = "favourite-add")).single().quantity)
+    }
+
+    @Test fun distinctCatalogueVariantsRemainSeparate() {
+        val product = Catalogue.find("Rolls")!!
+        val white = Item(name = product.name, productId = product.id, variety = "White", size = "4 pack")
+        val brown = white.copy(id = "brown", variety = "Brown")
+        val items = Rules.add(Rules.add(emptyList(), white), brown)
+        assertEquals(2, items.size)
+        assertEquals(setOf("White", "Brown"), items.map { it.variety }.toSet())
+        assertTrue(items.all { it.productId == product.id })
     }
 
     @Test fun rapidQuantityChangesRemainBoundedAndSequential() {

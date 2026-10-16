@@ -1,5 +1,24 @@
 # Changelog
 
+## Consolidation - 2026-10-16
+
+- Consolidated the seven current project documents and refreshed all task reports with explicit current versus historical evidence.
+- Corrected current behaviour documentation: catalogue Add contributes one package; favourite Add uses its independent saved count; routes render current state directly rather than the historical Task 7 Crossfade.
+- Consolidation PR #3 includes the later state/count commits from PR #2 and the verified current-interface journey. The older divergent Task 2 draft is superseded, with its branch retained.
+- Strengthened final journey persistence checks after review: committed Aldi acts as a write barrier before committed Lidl; assert independent list/favourite counts and Aldi isolation before/after recreation, without production changes.
+- Verified implementation 265b941 passed 50 unit tests, lint/build/security, three current Samsung runs and GitHub Android 13 run 38825384833. Consolidated integration is checked before merge and again on main.
+- Preserved original local edits in an ignored backup and retained stash; private root captures/guidance remain in place and ignored. No Task 5 production/schema/permission or application-APK change.
+
+## Task 5 CI instrumentation investigation - 2026-10-16
+
+- Reproduced the unchanged GitHub Android 13 first-add quantity timeout and a passing unchanged Samsung journey.
+- Added test-only first-add/timeout diagnostics and failure-safe CI runner, logcat and emulator configuration retention.
+- Preserved original interaction for diagnostic reproduction, confirmed fully clipped Add bounds on CI, then added catalogue scroll/displayed/enabled checks. No production change or timeout increase.
+- Scroll-only CI confirmed first Add, then identified snackbar coverage of the second tap; synchronize with snackbar disappearance before card interaction, with no fixed sleep.
+- Aligned the maintained journey with current Tab semantics, explicit shop startup, safe empty-fixture preconditions and stronger quantity/favourite/recreation outcomes.
+- Verified current journey on repeated Samsung runs and GitHub API 33 emulator; unit/lint/APK/security checks passed. Confirmed failure-artifact retention and restored original phone data byte-for-byte.
+- See docs/TASK5_CI_INSTRUMENTATION_REPORT.md for evidence and remaining coverage limits.
+
 ## Task 2 architecture recovery — 2026-10-15
 
 - Added stable reusable product IDs, product references on shopping entries and stable shop definitions.

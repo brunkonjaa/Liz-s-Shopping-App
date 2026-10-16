@@ -1,15 +1,23 @@
 # Security and privacy
 
-## Controls implemented
+Current controls and evidence boundary - 2026-10-16.
 
-- No Android permissions, `INTERNET` permission, network SDK, account, analytics, adverts or server were added.
-- Grocery data remains in private SQLite storage. Snapshot writes use parameter-bound values and a transaction; failed writes leave the previous state intact.
-- Database schema upgrades are explicit. Version 1 is decoded and migrated to version 2 only after complete validation; failed migration does not intentionally replace data with an empty state.
-- Backup input is bounded to 1 MiB and validates format versions, stable ID uniqueness, shop/product references, text, quantities, booleans, image metadata and collection sizes before restore.
-- Restore uses a validated pending state and transactional save. Existing data is not changed when parsing or saving fails.
-- User images use the Android document picker, bounded byte/dimension processing, generated app-private filenames and path-traversal checks. Ephemeral picker URIs are not persisted as the only reference.
-- Automatic cloud backup remains disabled. Manual backups are user-selected through SAF; no device-wide file scanning is used.
+## Application controls
 
-## Remaining review items
+- Offline native app; no server, account, network SDK, analytics, adverts, payments or permanent release-signing key added.
+- Private SQLite snapshots use parameter-bound writes and transactions. Invalid migrations/restores preserve existing data rather than replacing it with an empty state.
+- Backup input is limited to 1 MiB and validates format/version, IDs/references, collection/text limits, booleans, counts and image metadata before replacement.
+- User images use the document picker, bounded bytes/dimensions, generated private filenames and safe fallback references. No broad filesystem permission is needed.
+- Automatic backup remains disabled; manual exports/imports use user-selected document URIs. No device-wide scan or cleartext/network integration.
 
-Adversarial input execution, formal MASVS review, full accessibility review and release-signing review remain unverified. Custom encryption/authentication is not planned for this small private household app.
+## Verified scope
+
+The successful GitHub build checks the packaged manifest, including dependency contributions: no network/runtime permissions and only the launcher exported. The compatibility signature permission is not a runtime permission. Unit/lint/build and the Android 13 journey pass; no vulnerability-free or formal security-certification claim is made.
+
+Task 5 diagnostics live only in the test APK. State summaries limit household detail to controlled Bread quantities and counts; screenshots/trees can still contain visible data. Use disposable test state. CI retains selected app/test/SQLite logs on its fresh emulator; phone diagnostic log capture is app-PID limited. Snapshot readback is OPEN_READONLY.
+
+## Local material and remaining review
+
+Visual references, handovers, screenshots/UI XML and raw database snapshots remain ignored. Consolidation preserves original local edits in ignored backups and a retained stash rather than uploading private evidence. No production data or package identity changes were introduced by the CI investigation.
+
+Adversarial restore/URI execution, formal MASVS/dependency review, revoked-URI UI behaviour and release-signing review remain unverified. Current test evidence and coverage limits are in [TESTING.md](TESTING.md).

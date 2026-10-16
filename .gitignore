@@ -15,3 +15,10 @@ local.properties
 /.vscode/
 /screenshots/
 /verification/
+
+# Local investigation captures and private UI guidance at the project root.
+/shopping-*.png
+/shopping-*.xml
+/tracker-*.png
+/tracker-*.xml
+/UI_PERFORMANCE_AND_ANIMATION_GUIDELINES.md.txt

@@ -26,6 +26,32 @@ class StorageTest {
         LocalStore(app, name).use { assertEquals(sample(), it.load()) }
         app.deleteDatabase(name)
     }
+    @Test fun repeatedCatalogueAddsPersistCorrectQuantity() {
+        val app = RuntimeEnvironment.getApplication()
+        val name = "catalogue-add-${System.nanoTime()}.db"
+        try {
+            val product = Catalogue.find("Rolls")!!
+            var state = ShoppingState(selected = "Lidl")
+            repeat(10) {
+                val definition = state.shop("Lidl")
+                val data = state.stores.getValue(definition.id)
+                val item = Rules.defaultItem(product, data)!!
+                state = state.copy(stores = state.stores + (definition.id to data.copy(
+                    items = Rules.add(data.items, item),
+                    associatedProductIds = data.associatedProductIds + product.id
+                )))
+            }
+            LocalStore(app, name).use { it.save(state) }
+            LocalStore(app, name).use {
+                val restored = it.load()
+                assertEquals(1, restored.dataFor("Lidl").items.size)
+                assertEquals(10, restored.dataFor("Lidl").items.single().quantity)
+                assertEquals(product.id, restored.dataFor("Lidl").items.single().productId)
+            }
+        } finally {
+            app.deleteDatabase(name)
+        }
+    }
     @Test(expected = IllegalArgumentException::class) fun unknownVersionRejected() { val json = JSONObject(Backup.encode(sample())).put("version", 99); Backup.decode(json.toString()) }
     @Test(expected = IllegalArgumentException::class) fun oversizedBackupRejected() { Backup.decode(" ".repeat(Backup.MAX_BYTES + 1)) }
     @Test(expected = IllegalArgumentException::class) fun invalidShopRejected() { Backup.decode(JSONObject(Backup.encode(sample())).put("selected", "Unknown").toString()) }

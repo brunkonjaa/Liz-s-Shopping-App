@@ -1,5 +1,9 @@
 # Task 5 Acceptance Report
 
+## Historical scope and current follow-up - 2026-10-16
+
+This is the historical 2026-10-15 manual acceptance report, distinct from the later Task 5 CI-failure investigation. Its commands, APK hash and release verdict refer to that dated snapshot. Current implementation/testing status is in [TESTING.md](../TESTING.md) and the [CI completion report](TASK5_CI_INSTRUMENTATION_REPORT.md). The open UI/accessibility/reboot/backup checks below remain open; the current successful CI journey does not retroactively execute them.
+
 Date: 2026-10-15  
 Repository: `https://github.com/brunkonjaa/Liz-s-Shopping-App.git`  
 Branch: `development/task2-task3-integration`  

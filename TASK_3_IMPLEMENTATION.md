@@ -1,5 +1,9 @@
 # Task 3 visual redesign
 
+## Current status - 2026-10-16
+
+This records the preserved Task 3 design. Task 4 supplies contextual sheets; later commits supply direct Add/current-state routing. Private visual references remain local and ignored. Current verification supersedes the earlier pending-check note without changing historical design scope.
+
 ## Done
 
 - Added warm cream, oat, ivory, olive, caramel and terracotta Material 3 tokens.
@@ -9,7 +13,7 @@
 - Added the modal drawer for home, shops, favourites, current list, all items, settings and appearance controls.
 - Redesigned catalogue search, category chips, favourites and shopping list while preserving ViewModel operations, quantity rules, shop isolation and offline storage.
 - Kept accessible labels and state descriptions for navigation, quantities and completion toggles.
-- The implementation is preserved in this baseline; current verification evidence is tracked in `TESTING.md`, and lint, APK assembly and the connected Android journey remain to be rerun after the final Task 2 edits.
+- The Task 3 implementation is preserved. Current lint, APK, unit and Android 13 phone/CI journey checks passed on implementation 265b941; see [TESTING.md](TESTING.md). This verifies exercised interactions, not complete visual-reference fidelity or accessibility.
 
 ## Not done yet
 
