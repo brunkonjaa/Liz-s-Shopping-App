@@ -1,39 +1,36 @@
 # Liz's Shopping List
 
-## Task 5 CI investigation - 2026-10-16
+A native Kotlin and Jetpack Compose grocery-list app for Lidl, Aldi, Dunnes Stores and SuperValu. Lists work offline, with no accounts, network services, adverts, analytics, payments or pricing. The existing cream/olive editorial interface and light/dark/system appearance are preserved.
 
-The unchanged Android 13 emulator journey failed again on GitHub while the unchanged Samsung journey passed. CI artifacts establish that Add is fully clipped below the shorter emulator viewport. A second CI run confirmed the first Add works after scrolling, then exposed a snackbar covering the second tap. The maintained test scrolls, asserts displayed/enabled, and waits for the observable snackbar to clear before card interaction; production is unchanged. The current journey passed repeated Samsung runs and [GitHub Android 13 CI](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38825384833), including build/security checks. See [the CI investigation report](docs/TASK5_CI_INSTRUMENTATION_REPORT.md). Earlier phone/build passes do not establish CI reliability.
+## Current implementation
 
-Native Kotlin and Jetpack Compose grocery-list app for Lidl, Aldi, Dunnes Stores and SuperValu. It is offline-first and uses private SQLite snapshot storage; it has no accounts, network services, adverts, trackers or pricing.
+- Shared catalogue with stable product IDs, varieties, package sizes and optional offline images.
+- Independent shop lists, favourites, previous items, package counts and completion states.
+- Four protected default shops and validated custom-shop creation/rename/removal.
+- Direct catalogue Add adds **one package**, using a saved variety/size when available. Favourite Add uses that favourite's saved count; list edits never change the favourite default. Package size and package count are separate; counts are 1-999.
+- Contextual Material 3 sheets for shop management, product configuration and list/backup actions.
+- Private SQLite snapshot storage, explicit v1-to-v2 migration, bounded validated v1/v2 JSON restore and transactional replacement.
+- Offline document-picker image import into app-private storage. No broad storage or network permission.
 
-## Implemented
+## Verified state - 2026-10-16
 
-- Stable reusable catalogue product IDs and shop IDs.
-- Independent shop lists, favourites, previous items, quantities and completion states.
-- Persisted custom shops with rename and conservative deletion safeguards.
-- Version-2 JSON backup/restore with bounded validation and version-1 import compatibility.
-- Explicit SQLite schema v1-to-v2 migration with transactional failure preservation.
-- Bounded Android document-picker image import into app-private storage, with durable references and backup metadata.
-- Task 3 warm editorial UI, drawer, light/dark/system appearance, catalogue, favourites and shopping-list flows.
-- Task 7 responsive interaction pass: direct catalogue Add actions, optimistic quantity feedback with rollback, saved-list launch routing, target-aware transitions and explicit action semantics.
+Implementation `265b941` passed 50 unit tests, lint (0 errors, 13 existing warnings), debug/test APK assembly, packaged-security checks, three current Samsung Android 13 journey runs and [GitHub Android 13 Pixel 2 instrumentation](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38825384833). Failed and successful CI artifacts were inspected. The test now accounts for off-screen controls and transient snackbar coverage without sleeps, weaker outcomes or production changes for Task 5.
 
-## Build and verification
+This consolidation brings the later state/count fixes and the verified test/documents together on the main integration path. It does not certify untested backup/restore UI, accessibility, reboot/update persistence, all sheet/custom-image flows or API 37 runtime compatibility. See [TESTING.md](TESTING.md) for current evidence and limits.
 
-Use JDK 17, Android SDK 37 and the included Gradle wrapper:
+## Build
+
+Use JDK 17, Android compile SDK 37.0 and the Gradle 9.4.1 wrapper:
 
 ```text
-./gradlew testDebugUnitTest
-./gradlew lintDebug
-./gradlew assembleDebug
+./gradlew testDebugUnitTest lintDebug assembleDebug
 ./gradlew connectedDebugAndroidTest
 ```
 
-On 2026-10-15, unit tests, lint, debug APK assembly and the connected Android journey all passed on the available Samsung SM-A127F running Android 13. The API 37 emulator remains unverified because its previously observed startup/high-CPU issue has not been resolved; see `TESTING.md` for the evidence boundary.
+Instrumentation requires a disposable empty installation and can uninstall the app. Preserve household data before running it; the test refuses non-empty fixtures and does not clear them itself.
 
-Task 1 repository audit and architecture review are complete. Task 2 catalogue architecture recovery and Task 3 visual redesign are preserved in this branch. Task 4 adds shared Material 3 bottom sheets for shop selection/creation/management, product configuration and shopping-list options while preserving the Task 3 architecture and offline data model. See `TASK_4_IMPLEMENTATION.md` and `TESTING.md` for the implementation boundary and fresh verification evidence.
+## Documentation
 
-Task 7 evidence and limitations are recorded in `docs/TASK7_INTERACTION_AND_PERFORMANCE_REPORT.md`.
+The seven current project documents are this README, [FEATURES](FEATURES.md), [ARCHITECTURE](ARCHITECTURE.md), [TESTING](TESTING.md), [MIGRATION](MIGRATION.md), [SECURITY](SECURITY.md) and [CHANGELOG](CHANGELOG.md).
 
-## Scope limits
-
-Large-font/TalkBack checks, representative-user checks, screenshot comparison, physical-device persistence verification and release-signing validation remain open until directly executed. Private visual references and handover notes stay ignored and are not uploaded to GitHub.
+Task records: [Task 3 UI](TASK_3_IMPLEMENTATION.md), [Task 4 sheets](TASK_4_IMPLEMENTATION.md), [historical acceptance](docs/TASK5_ACCEPTANCE_REPORT.md), [historical Task 7 performance](docs/TASK7_INTERACTION_AND_PERFORMANCE_REPORT.md), and [CI diagnosis/completion](docs/TASK5_CI_INSTRUMENTATION_REPORT.md). Historical measurements retain their dates and do not supersede current testing evidence. Local visual references, handovers, captures and database snapshots stay ignored and are not uploaded.

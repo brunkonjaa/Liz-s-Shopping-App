@@ -1,5 +1,9 @@
 # Task 7 — Interaction and Performance Report
 
+## Historical scope and current follow-up - 2026-10-16
+
+This is the historical 2026-10-15 interaction/performance record. Preserve its measured samples and then-current test counts as historical evidence. Current catalogue Add always adds one package while retaining saved variety/size; favourite Add uses its own count. The historical 160ms route Crossfade was later removed; current routes render current state directly. Current verification is 50 unit tests plus repeated phone/GitHub Android 13 journeys, documented in [TESTING.md](../TESTING.md) and the [CI report](TASK5_CI_INSTRUMENTATION_REPORT.md). No new steady-state performance profile was collected during CI repair.
+
 Date: 2026-10-15
 Branch: `development/task2-task3-integration`
 Starting commit: `4383069a86cda79ba1c5beb16fcf3c5d06ff8b87`

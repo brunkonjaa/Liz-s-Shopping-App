@@ -1,5 +1,13 @@
 # Task 5: CI instrumentation investigation
 
+## Consolidation follow-up - 2026-10-16
+
+After the CI correction passed, the user explicitly authorized consolidating documents/work and merging into main. PR #3 now targets main and includes all PR #2 commits; Task 5 itself remains test-only relative to starting commit 5d331b8. The main integration therefore also includes the already-existing route/current-state and one-package count changes from PR #2. No additional production change was made for consolidation.
+
+All current project documents were reconciled. Task 3/4 local notes were retained and refreshed with current verification; older acceptance/performance reports keep dated measurements and explicit supersession notes. The obsolete divergent Task 2 PR is superseded, not merged over the newer catalogue/storage/UI implementation.
+
+Original six-file local edits were backed up under ignored verification output and retained in a named pre-consolidation stash. The earlier scrolling-only test is superseded by the verified current test; its original bytes are still preserved. Private root captures/guidance remain in place under ignore rules. The original Task 5 repository-state notes below describe the investigation starting/ending boundary; the later authorized consolidation advances main after checks pass.
+
 Date: 2026-10-16, Europe/Dublin. This report concerns the CI failure brief, separately from the earlier Task 5 acceptance report.
 
 ## A. Repository state
@@ -141,4 +149,4 @@ This journey does not establish reboot/process-restart persistence, editor/custo
 
 ## F. Verdict
 
-**RESOLVED:** Diagnostic CI evidence establishes both interaction obstructions. The current-interface journey corrects scrolling and observable snackbar synchronization, preserves and strengthens its outcome assertions, passes repeated Samsung execution and GitHub Android 13 instrumentation, and retains useful failure artifacts. Unit, lint, APK and packaged-security checks pass. Production code, application APK, user data and unrelated original work are preserved. The PR remains draft and unmerged.
+**RESOLVED:** Diagnostic CI evidence establishes both interaction obstructions. The current-interface journey corrects scrolling and observable snackbar synchronization, preserves and strengthens its outcome assertions, passes repeated Samsung execution and GitHub Android 13 instrumentation, and retains useful failure artifacts. Unit, lint, APK and packaged-security checks pass. Production code, application APK, user data and unrelated original work are preserved. This was the verified Task 5 verdict before the separately authorized consolidation/merge follow-up above.

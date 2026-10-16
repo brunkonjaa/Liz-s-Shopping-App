@@ -1,25 +1,21 @@
 # Storage and backup migration
 
-## Task 5 compatibility check
+Current schema/backup contract - 2026-10-16. The CI correction and documentation consolidation introduce no new schema or backup version.
 
-The CI investigation changes no schema, backup version, product/shop identity or migration. Diagnostic SQLite access is read-only and does not run LocalStore.onUpgrade. Existing migration and transactional-preservation tests remain required.
+## SQLite
 
-## Database
+The private database is schema v2, containing one `state` row with a bounded validated JSON snapshot. Explicit v1-to-v2 upgrade decodes legacy data, assigns stable product/shop references, validates the converted state and writes it inside SQLite's upgrade transaction.
 
-The private SQLite database is schema version 2. Version 1 contains one `state` row with a version-1 JSON payload. Opening a version-1 database invokes `LocalStore.onUpgrade`, decodes the old payload, assigns stable product references, seeds stable shop definitions, rebuilds shop associations, validates the result and writes one version-2 payload inside the SQLite upgrade transaction.
+Invalid conversion or unsupported upgrade throws before a successful version advance. There is no destructive fallback, automatic empty replacement or silent recovery deletion. Application load errors preserve the saved payload for recovery.
 
-If decoding, conversion or validation fails, the upgrade throws. No empty replacement is written and the source payload is not deliberately deleted or advanced as a recovery shortcut. The application reports a controlled load failure so a valid manual backup can be restored.
+## JSON restore
 
-## JSON backups
+New exports are v2; valid v1 backups remain importable. v2 includes stable shop/product IDs, catalogue definitions, associations, lists/favourites/previous entries, package counts, completion, notes and image metadata. Import reads are bounded to 1 MiB. Decode validates versions, identities, references, collection/text limits and quantities before confirmation and transactional replacement.
 
-Version 1 backups remain importable. New exports use version 2 and include stable product/shop IDs, catalogue definitions, associations, list/favourite/previous entries, quantities, completion, notes and image metadata. Inputs remain bounded to 1 MiB and are fully validated before the restore confirmation is shown.
+Custom image bytes are bounded and represented as metadata/base64 where available. A generated app-private image reference is not assumed to be a portable external path; missing images have a safe fallback.
 
-Custom image bytes are bounded and included as base64 metadata in v2 when available; the corresponding app-private generated reference is never treated as a portable filesystem path. A missing local image file therefore falls back safely, while a v2 restore can retain the portable bytes for the product.
+## Invariants and verification
 
-## Compatibility rules
+The four default shops and IDs remain protected; list/favourite identity and counts stay independent; removing an item does not remove its product. Custom-shop removal is refused while associated list/favourite/previous data exists.
 
-- The four default shops are always present and keep their IDs.
-- List and favourite IDs, quantities and completion states are preserved.
-- Product definitions are shared; removing an item does not remove its product.
-- Custom shops are only removed when their lists, favourites and previous items are empty.
-- Future changes require a new explicit schema/backup version and tests; destructive upgrades are not permitted.
+The current 16-test StorageTest suite and related Rules tests pass, including real SQLite migration/round-trip and invalid-state preservation cases. This does not verify every physical-device upgrade or document-picker restore journey. Those UI/device checks remain open in [TESTING.md](TESTING.md). Future schema changes require a new explicit, tested migration; destructive upgrades remain prohibited.

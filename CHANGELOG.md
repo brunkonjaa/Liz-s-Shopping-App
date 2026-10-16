@@ -1,5 +1,13 @@
 # Changelog
 
+## Consolidation - 2026-10-16
+
+- Consolidated the seven current project documents and refreshed all task reports with explicit current versus historical evidence.
+- Corrected current behaviour documentation: catalogue Add contributes one package; favourite Add uses its independent saved count; routes render current state directly rather than the historical Task 7 Crossfade.
+- Consolidation PR #3 includes the later state/count commits from PR #2 and the verified current-interface journey. The older divergent Task 2 draft is superseded, with its branch retained.
+- Verified implementation 265b941 passed 50 unit tests, lint/build/security, three current Samsung runs and GitHub Android 13 run 38825384833. Consolidated integration is checked before merge and again on main.
+- Preserved original local edits in an ignored backup and retained stash; private root captures/guidance remain in place and ignored. No Task 5 production/schema/permission or application-APK change.
+
 ## Task 5 CI instrumentation investigation - 2026-10-16
 
 - Reproduced the unchanged GitHub Android 13 first-add quantity timeout and a passing unchanged Samsung journey.

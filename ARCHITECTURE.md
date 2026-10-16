@@ -1,34 +1,33 @@
 # Architecture
 
-## Task 5 diagnostic boundary
+Current state - 2026-10-16. Native Kotlin/Jetpack Compose, package `ie.suric.lizshopping`, one activity, one state-owning ViewModel and a private SQLite snapshot store. No server or account layer.
 
-JourneyDiagnostics lives exclusively in androidTest. It observes ViewModel flows and reads the committed SQLite snapshot using OPEN_READONLY, without constructing LocalStore or changing production state. Optional method tracing can establish save/transaction method entry and exit but changes scheduling. A returned injected click does not prove callback delivery, and committed readback alone cannot identify an attempted or failed write.
+## State and identity
 
-Liz's Shopping List is a native Kotlin/Jetpack Compose, offline-first application with one Compose activity, one state-owning ViewModel and a small platform SQLite snapshot store. The package/application ID remains `ie.suric.lizshopping`.
+`Product` is a reusable catalogue definition with stable ID, name/category, varieties, package sizes and optional image metadata. Built-in IDs are deterministic; custom products receive persisted IDs.
 
-## State model
+`Item` is an independent list/favourite/previous configuration with its own ID, package count, variety, size, notes, completion and optional product reference. Its match key includes product/name, variety and size. List edits cannot change a favourite default.
 
-- `Product` is a reusable catalogue definition with a stable `id`, name, category, varieties, package sizes and optional durable image metadata. Built-in product IDs are deterministic; user products receive a persisted custom ID.
-- `Item` is a shopping-list/favourite/previous configuration. It keeps its own ID, package count, variety, size, notes, completion state and optional `productId`; editing a list item cannot mutate a favourite default.
-- `Shop` has a stable ID, display name and built-in flag. Lidl, Aldi, Dunnes Stores and SuperValu are seeded and cannot be removed. User shops are persisted and can be renamed; removal is refused while associated data exists.
-- `ShopData` remains shop-scoped, with independent items, favourites, previous items and explicit catalogue associations.
+`Shop` has a stable ID/name and built-in flag. The four defaults cannot be removed. Custom-shop removal is refused while list, favourite or previous data exists. `ShopData` remains keyed by stable shop ID, keeping all collections and catalogue associations independent.
 
-The shared catalogue is `Catalogue.products + ShoppingState.custom`; product definitions are not deleted when list entries are removed. Shop state is keyed by stable shop ID, while the Compose layer presents display names.
+Catalogue Add uses saved variety/size or valid catalogue defaults, always adding one package. Favourite Add uses the saved favourite count. Counts remain 1-999 and separate from package size.
 
-## Persistence and migration
+## Updates and persistence
 
-`Storage.kt` retains one bounded JSON snapshot in private SQLite. The database schema is now version 2. Existing schema-version-1 rows are decoded with the permanent v1 decoder, converted to stable product/shop references, validated, encoded as v2 and committed by the SQLite upgrade transaction. A failed conversion throws before the database version can advance, leaving the legacy payload available for recovery.
+`ShoppingViewModel` publishes optimistic small changes, serializes writes behind a mutex and saves on `Dispatchers.IO`. A failed write restores the preceding in-memory state and exposes an error message. Load failure leaves the saved snapshot available for recovery.
 
-Backup format v2 contains shop definitions, catalogue products, stable IDs, shop associations, lists, favourites, previous items, quantities, completion, notes and image metadata. Valid v1 backups remain importable. Every restore is fully bounded and validated before `LocalStore.save` performs transactional replacement.
+`LocalStore` holds one validated JSON snapshot in SQLite schema v2. Explicit v1-to-v2 migration decodes and validates the old state before writing inside SQLite's upgrade transaction. Unsupported or invalid upgrades throw; no destructive fallback is used.
 
-## Images
+Restore is bounded to 1 MiB and fully decoded/validated before confirmation and transactional replacement. See [MIGRATION.md](MIGRATION.md).
 
-Bundled products use stable symbolic/image references and an emoji fallback. User-selected PNG, JPEG or WebP content is read through the Android document picker, bounded to 256 KiB and 4096px dimensions, copied under `files/product-images/` with a generated filename, and never stored as an untrusted path. Small image metadata is included in v2 backups so a restored product does not silently depend on the original picker URI. Missing files remain safe to render with a fallback.
+## UI and images
 
-## UI boundaries
+`MainActivity.kt`, `Components.kt`, `Task4Sheets.kt` and `Theme.kt` own the current home/drawer/tab, catalogue/favourite/list and sheet surfaces. Returning users open the selected shop list; first-time users start at Home. Drawer visibility is transient. Routes render current state directly; the earlier Task 7 route Crossfade is historical and is no longer the current route implementation.
 
-`MainActivity.kt`, `Components.kt`, `Task4Sheets.kt` and `Theme.kt` preserve the Task 3 warm editorial design, drawer, themes, catalogue, favourites and list flows. `LizBottomSheet` is the shared Material 3 modal surface for contextual selection, creation, editing, confirmation and options. Dynamic shop definitions are shown through the home cards, drawer and change-shop sheet. The product editor remains the existing stateful editor, now presented in the shared sheet surface with catalogue reuse suggestions, category validation and keyboard-safe scrolling.
+`LizBottomSheet` supplies shared Material 3 surfaces. Editor fields retain catalogue reuse, category validation, quantity/notes, favourite and optional image handling. Document-picker image bytes are bounded and copied to generated app-private filenames; metadata supports backup and fallback rendering.
 
-## Deliberate constraints
+## Verification boundary
 
-No Room, network service, account, analytics, price, broad storage permission or release signing key was added. Database operations remain off the UI thread behind the ViewModel mutex. Package size remains separate from package count, with quantities constrained to 1–999.
+`JourneyDiagnostics` exists only in androidTest. It observes ViewModel/message flows, reads committed SQLite with OPEN_READONLY, and captures semantics, accessibility XML, screenshots, window/IME and logs. Optional method tracing affects scheduling and is a separate experiment. Successful injection is not proof of callback delivery; optimistic publication is not proof of a durable write.
+
+The maintained journey uses current Tab semantics, safe fixture preconditions, scrolling/displayed/enabled checks and observable snackbar disappearance. Production code was unchanged during Task 5; consolidation also includes the pre-existing state/count commits from PR #2. See [TESTING.md](TESTING.md).

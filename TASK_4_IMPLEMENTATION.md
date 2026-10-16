@@ -1,5 +1,9 @@
 # Task 4 implementation
 
+## Current status - 2026-10-16
+
+The Task 4 implementation is preserved in the consolidated app. Current journey evidence and explicit remaining sheet/keyboard/accessibility coverage are maintained in [TESTING.md](TESTING.md); historical screenshots are not a claim of full current acceptance.
+
 ## Shared interaction layer
 
 Task 4 keeps the single-activity Compose architecture and adds `LizBottomSheet` in `Components.kt`. It applies the warm cream/ivory/oat surfaces, olive/sage/caramel accents, rounded upper corners, keyboard insets, scrollable content, 48dp-class touch targets and a consistent drag handle. `Task4Sheets.kt` contains reusable shop selection, shop creation/rename/removal, shopping-options and confirmation sheets.
@@ -19,4 +23,4 @@ Forms validate before their save callback; validation failures leave the sheet o
 
 ## Accessibility and verification boundary
 
-Important selected-shop state is expressed with radio controls and text, not colour alone. Quantity buttons, favourite buttons, drawer entries and list controls expose content descriptions. Unit tests cover category normalization, quantity bounds, shop identity and existing persistence/migration invariants. The connected journey and representative sheet screenshots were verified on Samsung SM-A127F / Android 13; API 37 emulator limitations, large-font/TalkBack checks and device-level persistence after restart remain open.
+Important selected-shop state is expressed with radio controls and text, not colour alone. Quantity buttons, favourite buttons, drawer entries and list controls expose content descriptions. Unit tests cover category normalization, quantity bounds, shop identity and existing persistence/migration invariants. The connected journey and representative sheet screenshots were verified on the earlier Samsung SM-A127F / Android 13 baseline; the maintained current journey has now passed repeated Samsung runs and GitHub Android 13 CI. This does not re-verify every sheet/editor/management flow. API 37 emulator limitations, large-font/TalkBack checks and device-level persistence after restart remain open.
