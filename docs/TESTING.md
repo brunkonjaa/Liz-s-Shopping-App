@@ -1,8 +1,12 @@
 # Testing
 
-## Catalogue expansion source checks — 2026-10-16
+## Current `main` verification — 2026-10-16
 
-Version 1.0.1 adds `CatalogueTest` checks for unique product names/IDs, descriptions and pictograms on every built-in item, representative products from the supplied catalogues, and the 1 MiB backup limit with the expanded catalogue. Run them with `./gradlew testDebugUnitTest`; run the full project CI checks with `./gradlew testDebugUnitTest lintDebug assembleDebug` and the Android 13 journey. These checks have not yet run in the current workspace because Gradle 9.4.1 is not cached and network access to `services.gradle.org` is unavailable. Do not treat the source checks or prior v1.0.0 results as evidence that v1.0.1 passes.
+GitHub Actions run [38918113185](https://github.com/brunkonjaa/Liz-s-Shopping-App/actions/runs/38918113185) tested `main` at `8b19b50f499902af7c50f82b9b9b32dc9421246e` after the catalogue expansion was merged. The `build` and `android13-journey` jobs both completed successfully. The build job ran `testDebugUnitTest`, `lintDebug`, `assembleDebug`, packaged-permission/exported-component validation, and uploaded validation reports and a debug APK. The second job completed the hosted Android 13 journey. This is current evidence for that commit only; it does not cover every feature or replace manual device/accessibility checks. The local workspace could not rerun Gradle because the wrapper distribution download was blocked by the environment’s network restriction.
+
+## Catalogue expansion checks — 2026-10-16
+
+Version 1.0.1 adds `CatalogueTest` checks for unique product names/IDs, descriptions and pictograms on built-in items, representative products from the supplied catalogues, and the 1 MiB backup limit with the expanded catalogue. These checks were included in the successful `main` workflow recorded above. A separate local rerun is unavailable in this workspace because the Gradle 9.4.1 distribution cannot be downloaded here.
 
 ## Current release verification - 2026-10-16
 
