@@ -43,6 +43,8 @@ Instrumentation requires a disposable empty installation and can uninstall the a
 
 The project guide is this README and the repository rules are in [AGENTS.md](AGENTS.md). Feature, architecture, testing, migration, privacy and release notes live together in [`docs/`](docs/): [Features](docs/FEATURES.md), [Architecture](docs/ARCHITECTURE.md), [Testing](docs/TESTING.md), [Migration](docs/MIGRATION.md), [Security](docs/SECURITY.md) and [Changelog](docs/CHANGELOG.md).
 
+The approved visual, interaction and reusable-catalogue requirements are consolidated in [Approved Redesign Contract](docs/APPROVED_REDESIGN_CONTRACT.md). It distinguishes target requirements from features already implemented.
+
 ### Task reports
 
 - [Task 3: Visual redesign](docs/TASK_3_IMPLEMENTATION.md)
